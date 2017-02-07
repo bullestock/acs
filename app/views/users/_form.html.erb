@@ -1,29 +1,37 @@
 <%= form_for @user do |f| %>
 
-  <% if @user.errors.any? %>
-    <div id="error_explanation">
-      <h2>
-	<%= pluralize(@user.errors.count, "error") %> prohibited
-	this user from being saved:
-      </h2>
-      <ul>
-	<% @user.errors.full_messages.each do |msg| %>
-	<li><%= msg %></li>
-	<% end %>
-      </ul>
-    </div>
+<% if @user.errors.any? %>
+<div id="error_explanation">
+  <h2>
+    <%= pluralize(@user.errors.count, "error") %> prohibited
+    this user from being saved:
+  </h2>
+  <ul>
+    <% @user.errors.full_messages.each do |msg| %>
+    <li><%= msg %></li>
     <% end %>
+  </ul>
+</div>
+<% end %>
 
-    <p>
-      <%= f.label :first_name %><br>
-      <%= f.text_field :first_name %>
-    </p>
-
-    <p>
-      <%= f.label :first_name %><br>
-      <%= f.text_field :last_name %>
-    </p>
-
+<table>
+  <tr>
+    <td><%= f.label 'Name' %></td>
+    <td><%= "#{@user.first_name} #{@user.last_name}" %></td>
+  </tr>
+  <tr>
+    <td><%= f.label :can_login %></td>
+      <td><%= check_box "user", "can_login", {:checked => :can_login } %></td>
+  </tr>
+  <tr>
+    <td><%= f.label :can_provision %></td>
+    <td><%= check_box "user", "can_provision", {:checked => :can_provision } %></td>
+  </tr>
+  <tr>
+    <td><%= f.label :can_deprovision %></td>
+    <td><%= check_box "user", "can_deprovision", {:checked => :can_deprovision } %></td>
+  </tr>
+</table>
     <p>
       <%= f.submit %>
     </p>

@@ -5,7 +5,7 @@ class FlSyncJob < ActiveJob::Base
   queue_as :default
 
   def self.perform(*args)
-    puts "Synching with ForeningLet: #{args}"
+    puts "Synch: #{args}"
     secret = YAML.load_file('secret.yml')
     creds = secret['credentials']
     user = creds[0]
@@ -31,7 +31,12 @@ class FlSyncJob < ActiveJob::Base
       else
         puts "Member #{first_name} #{last_name} does not exist"
         u = User.new
+        u.access_to = Array.new
+        u.can_login = false
+        u.can_provision = false
+        u.can_deprovision = false
       end
+      u.active = true
       u.member_id = id
       u.fl_id = number
       u.first_name = first_name

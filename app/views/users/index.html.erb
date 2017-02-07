@@ -2,16 +2,25 @@
 
 <table>
   <tr>
-    <th>First</th>
-    <th>Last</th>
-    <th colspan="2"></th>
+    <th>ID</th>
+    <th>Name</th>
+    <th>Card</th>
+    <th>Access</th>
+    <th>Login</th>
+    <th>Provision</th>
+    <th>Deprovision</th>
+    <th></th>
   </tr>
 
   <% @users.each do |user| %>
-  <tr>
-    <td><%= user.first_name %></td>
-    <td><%= user.last_name %></td>
-    <td><%= link_to 'Show', user_path(user) %></td>
+  <tr<%= user.active %>>
+    <td><%= user.fl_id %></td>
+    <td><%= user.first_name %> <%= user.last_name %></td>
+    <td><%= user.card_id %></td>
+    <td><%= user.access_to %></td>
+    <td><%= check_box_tag :can_login, "1", user.can_login, disabled: true %></td>
+    <td><%= check_box_tag :can_provision, "1", user.can_provision, disabled: true %></td>
+    <td><%= check_box_tag :can_deprovision, "1", user.can_deprovision, disabled: true %></td>
     <td><%= link_to 'Edit', edit_user_path(user) %></td>
   </tr>
   <% end %>
