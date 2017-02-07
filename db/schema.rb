@@ -11,10 +11,21 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20170207201749) do
+ActiveRecord::Schema.define(version: 20170207220452) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
+
+  create_table "machines", force: :cascade do |t|
+    t.string   "name"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "machines_users", id: false, force: :cascade do |t|
+    t.integer "machine_id", null: false
+    t.integer "user_id",    null: false
+  end
 
   create_table "users", force: :cascade do |t|
     t.integer "fl_id"
@@ -24,7 +35,6 @@ ActiveRecord::Schema.define(version: 20170207201749) do
     t.string  "display_name"
     t.boolean "active"
     t.string  "card_id"
-    t.text    "access_to",       default: [], array: true
     t.boolean "can_login"
     t.boolean "can_provision"
     t.boolean "can_deprovision"

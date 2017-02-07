@@ -20,6 +20,15 @@
     <td><%= "#{@user.first_name} #{@user.last_name}" %></td>
   </tr>
   <tr>
+    <td><%= f.label "Access" %></td>
+    <td><%= f.collection_check_boxes :machine_ids, Machine.all, :id, :name do |b| %>
+    <div class="collection-check-box">
+      <%= b.check_box %>
+      <%= b.label %>
+    </div>
+    <% end %></td>
+  </tr>
+  <tr>
     <td><%= f.label :can_login %></td>
       <td><%= check_box "user", "can_login", {:checked => :can_login } %></td>
   </tr>

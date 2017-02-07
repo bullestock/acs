@@ -37,6 +37,6 @@ class UsersController < ApplicationController
 
   private
   def user_params
-    params.require(:user).permit(:first_name, :last_name, :can_login, :can_provision, :can_deprovision)
+    params.require(:user).permit(:first_name, :last_name, :can_login, :can_provision, :can_deprovision, machine_ids:[])
   end
 end
