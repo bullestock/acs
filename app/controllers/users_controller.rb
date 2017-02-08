@@ -11,7 +11,7 @@ class UsersController < ApplicationController
   end
 
   def index
-    @users = User.all
+    @users = User.order(:fl_id)
   end
   
   def show
@@ -29,7 +29,7 @@ class UsersController < ApplicationController
     @user = User.find(params[:id])
 
     if @user.update(user_params)
-      redirect_to @user
+      redirect_to action: "index"
     else
       render 'edit'
     end
