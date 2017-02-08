@@ -29,7 +29,7 @@ class MachinesController < ApplicationController
     @machine = Machine.find(params[:id])
 
     if @machine.update(machine_params)
-      redirect_to @machine
+      redirect_to action: "index"
     else
       render 'edit'
     end
