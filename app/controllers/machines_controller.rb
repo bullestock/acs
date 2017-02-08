@@ -35,6 +35,12 @@ class MachinesController < ApplicationController
     end
   end
 
+  def destroy
+    Machine.find(params[:id]).destroy
+    flash[:success] = "Machine deleted"
+    redirect_to machine_url
+  end
+  
   private
   def machine_params
     params.require(:machine).permit(:name)

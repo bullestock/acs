@@ -1,25 +1,15 @@
-<%= form_for @machine do |f| %>
+= form_for @machine do |f|
+  - if @machine.errors.any?
+    %div#error_explanation
+      %h2
+        = pluralize(@machine.errors.count, "error")
+        prohibited this machine from being saved:
+      %ul  
+        - @machine.errors.full_messages.each do |msg|
+          %li= msg
 
-<% if @machine.errors.any? %>
-<div id="error_explanation">
-  <h2>
-    <%= pluralize(@machine.errors.count, "error") %> prohibited
-    this machine from being saved:
-  </h2>
-  <ul>
-    <% @machine.errors.full_messages.each do |msg| %>
-    <li><%= msg %></li>
-    <% end %>
-  </ul>
-</div>
-<% end %>
-
-<p>
-  <%= f.label :name %>
-  <%= f.text_field :name %>
-</p>
-<p>
-  <%= f.submit %>
-</p>
-
-<% end %>
+  %p
+    = f.label :name
+    = f.text_field :name
+  %p
+    = f.submit

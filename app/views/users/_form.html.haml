@@ -1,48 +1,34 @@
-<%= form_for @user do |f| %>
+= form_for @user do |f|
+  - if @user.errors.any?
+    %div#error_explanation
+      %h2
+        = pluralize(@user.errors.count, "error")
+        prohibited this user from being saved:
+      %ul
+        - @user.errors.full_messages.each do |msg|
+          %li= msg
 
-<% if @user.errors.any? %>
-<div id="error_explanation">
-  <h2>
-    <%= pluralize(@user.errors.count, "error") %> prohibited
-    this user from being saved:
-  </h2>
-  <ul>
-    <% @user.errors.full_messages.each do |msg| %>
-    <li><%= msg %></li>
-    <% end %>
-  </ul>
-</div>
-<% end %>
+  %table
+    %tbody
+      %tr
+        %td= f.label 'Name'
+        %td= "#{@user.first_name} #{@user.last_name}"
+      %tr
+        %td= f.label "Access"
+        %td
+          = f.collection_check_boxes :machine_ids, Machine.all, :id, :name do |b|
+            .collection-check-box
+              = b.check_box
+              = b.label
+      %tr
+        %td= f.label :can_login
+        %td= check_box "user", "can_login", {:checked => :can_login }
+      %tr
+        %td= f.label :can_provision
+        %td= check_box "user", "can_provision", {:checked => :can_provision }
+      %tr
+        %td= f.label :can_deprovision
+        %td= check_box "user", "can_deprovision", {:checked => :can_deprovision }
 
-<table>
-  <tr>
-    <td><%= f.label 'Name' %></td>
-    <td><%= "#{@user.first_name} #{@user.last_name}" %></td>
-  </tr>
-  <tr>
-    <td><%= f.label "Access" %></td>
-    <td><%= f.collection_check_boxes :machine_ids, Machine.all, :id, :name do |b| %>
-    <div class="collection-check-box">
-      <%= b.check_box %>
-      <%= b.label %>
-    </div>
-    <% end %></td>
-  </tr>
-  <tr>
-    <td><%= f.label :can_login %></td>
-      <td><%= check_box "user", "can_login", {:checked => :can_login } %></td>
-  </tr>
-  <tr>
-    <td><%= f.label :can_provision %></td>
-    <td><%= check_box "user", "can_provision", {:checked => :can_provision } %></td>
-  </tr>
-  <tr>
-    <td><%= f.label :can_deprovision %></td>
-    <td><%= check_box "user", "can_deprovision", {:checked => :can_deprovision } %></td>
-  </tr>
-</table>
-    <p>
-      <%= f.submit %>
-    </p>
-
-<% end %>
+  %p
+  = f.submit

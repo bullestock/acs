@@ -1,7 +1,7 @@
-<p>
-  <strong>Name:</strong>
-  <%= @machine.name %>
-</p>
+%p
+  %strong= "Name:"
+  = @machine.name
 
-<%= link_to 'Edit', edit_machine_path(@machine) %> |
-<%= link_to 'Back', machines_path %>
+= link_to 'Edit', edit_machine_path(@machine)
+%p
+= link_to 'Back', machines_path

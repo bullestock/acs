@@ -1,19 +1,19 @@
-<h1>Machines</h1>
+%h1 Machines
 
-<%= link_to 'Home', root_path %>
+= link_to 'Home', root_path
 
-<table>
-  <tr>
-    <th>Name</th>
-    <th></th>
-  </tr>
+%table
+  %thead
+    %th Name
+    %th
+    %th
+  %tbody
 
-  <% @machines.each do |machine| %>
-  <tr>
-    <td><%= machine.name %></td>
-    <td><%= link_to 'Edit', edit_machine_path(machine) %></td>
-  </tr>
-  <% end %>
-</table>
+  - @machines.each do |machine|
+    %tr
+    %td= machine.name
+    %td= link_to 'Edit', edit_machine_path(machine)
 
-<%= link_to 'Home', root_path %>
+= link_to 'New machine', new_machine_path
+%p
+= link_to 'Home', root_path

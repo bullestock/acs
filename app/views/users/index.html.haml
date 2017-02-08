@@ -1,30 +1,28 @@
-<h1>Users</h1>
+%h1= "Users"
 
-<%= link_to 'Home', root_path %>
+= link_to 'Home', root_path
 
-<table>
-  <tr>
-    <th>ID</th>
-    <th>Name</th>
-    <th>Card</th>
-    <th>Access</th>
-    <th>Login</th>
-    <th>Provision</th>
-    <th>Deprovision</th>
-    <th></th>
-  </tr>
+%table
+  %thead
+    %th= "ID"
+    %th= "Name"
+    %th= "Card"
+    %th= "Access"
+    %th= "Login"
+    %th= "Provision"
+    %th= "Deprovision"
+    %th= ""
+  %tbody
 
-  <% @users.each do |user| %>
-  <tr<%= user.active %>>
-    <td><%= user.fl_id %></td>
-    <td><%= user.first_name %> <%= user.last_name %></td>
-    <td><%= user.card_id %></td>
-    <td><%= user.machines.map(&:name).sort.join(", ") %></td>
-    <td><%= check_box_tag :can_login, "1", user.can_login, disabled: true %></td>
-    <td><%= check_box_tag :can_provision, "1", user.can_provision, disabled: true %></td>
-    <td><%= check_box_tag :can_deprovision, "1", user.can_deprovision, disabled: true %></td>
-    <td><%= link_to 'Edit', edit_user_path(user) %></td>
-  </tr>
-  <% end %>
-</table>
-<%= link_to 'Home', root_path %>
+  - @users.each do |user|
+    %tr
+      %td= user.fl_id
+      %td= "#{user.first_name} #{user.last_name}"
+      %td= user.card_id
+      %td= user.machines.map(&:name).sort.join(", ")
+      %td= check_box_tag :can_login, "1", user.can_login, disabled: true
+      %td= check_box_tag :can_provision, "1", user.can_provision, disabled: true
+      %td= check_box_tag :can_deprovision, "1", user.can_deprovision, disabled: true
+      %td= link_to 'Edit', edit_user_path(user)
+
+= link_to 'Home', root_path
