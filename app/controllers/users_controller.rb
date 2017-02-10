@@ -1,5 +1,7 @@
 class UsersController < ApplicationController
-
+  include SmartListing::Helper::ControllerExtensions
+  helper SmartListing::Helper
+  
   http_basic_authenticate_with name: "torsten", password: "secret"
 
   def new
@@ -11,7 +13,8 @@ class UsersController < ApplicationController
   end
 
   def index
-    @users = User.order(:fl_id)
+    smart_listing_create :users, User.all, partial: "users/list", page_sizes: [10000],
+                         sort_attributes: [[:fl_id, "fl_id"], [:name, "concat(first_name, last_name)"]]
   end
   
   def show

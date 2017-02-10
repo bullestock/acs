@@ -2,27 +2,6 @@
 
 = link_to 'Home', root_path
 
-%table
-  %thead
-    %th= "ID"
-    %th= "Name"
-    %th= "Card"
-    %th= "Access"
-    %th= "Login"
-    %th= "Provision"
-    %th= "Deprovision"
-    %th= ""
-  %tbody
-
-  - @users.each do |user|
-    %tr
-      %td= user.fl_id
-      %td= "#{user.first_name} #{user.last_name}"
-      %td= user.card_id
-      %td= user.machines.map(&:name).sort.join(", ")
-      %td= check_box_tag :can_login, "1", user.can_login, disabled: true
-      %td= check_box_tag :can_provision, "1", user.can_provision, disabled: true
-      %td= check_box_tag :can_deprovision, "1", user.can_deprovision, disabled: true
-      %td= link_to 'Edit', edit_user_path(user)
+= smart_listing_render :users
 
 = link_to 'Home', root_path
