@@ -13,8 +13,16 @@ class UsersController < ApplicationController
   end
 
   def index
-    smart_listing_create :users, User.all, partial: "users/list", page_sizes: [10000],
-                         sort_attributes: [[:fl_id, "fl_id"], [:name, "concat(first_name, last_name)"]]
+    # Apply the search control filter.
+    filter_params = params[:filter]
+    if filter_params
+      filter_params = { 'first_name' => { 'idx' => { 'o' => 'like', 'v' => filter_params } } }
+      params[:filter] = filter_params
+    end
+    users_scope = User.all_with_filter(params, User.all)
+
+    @users = smart_listing_create :users, users_scope, partial: "users/list", page_sizes: [10000],
+                                  sort_attributes: [[:fl_id, "fl_id"], [:name, "concat(first_name, last_name)"]]
   end
   
   def show

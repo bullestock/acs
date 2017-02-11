@@ -2,6 +2,15 @@
 
 = link_to 'Home', root_path
 
+= smart_listing_controls_for(:users, {class: "form-inline text-right"}) do
+  -# Add search box to form - it submits the form automatically on text change
+  .form-group.filter.input-append
+    = text_field_tag :filter, '', class: "search form-control",
+                     placeholder: "Search...", autocomplete: :off
+
+  %button.btn.btn-primary.disabled{type: :submit}
+    %span.glyphicon.glyphicon-search
+
 = smart_listing_render :users
 
 = link_to 'Home', root_path
