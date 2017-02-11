@@ -8,11 +8,12 @@
         - @user.errors.full_messages.each do |msg|
           %li= msg
 
+  - no_login = !@user.login || @user.login.empty?
   %table
     %tbody
       %tr
         %td= f.label 'Name'
-        %td= "#{@user.name}"
+        %td= @user.name
       %tr
         %td= f.label "Access"
         %td
@@ -22,13 +23,13 @@
               = b.label
       %tr
         %td= f.label :can_login
-        %td= check_box "user", "can_login", {:checked => :can_login }
+        %td= check_box "user", "can_login", {:checked => :can_login, :disabled => no_login }
       %tr
         %td= f.label :can_provision
-        %td= check_box "user", "can_provision", {:checked => :can_provision }
+        %td= check_box "user", "can_provision", {:checked => :can_provision, :disabled => no_login }
       %tr
         %td= f.label :can_deprovision
-        %td= check_box "user", "can_deprovision", {:checked => :can_deprovision }
+        %td= check_box "user", "can_deprovision", {:checked => :can_deprovision, :disabled => no_login }
 
   %p
   = f.submit
