@@ -16,7 +16,7 @@ class FlSyncJob < ActiveJob::Base
     activity_ids = secret['activity_ids']
     active_members = Array.new
     members.each { |m|
-      id = m["MemberId"]
+      id = m["MemberId"].to_i
       number = m["MemberNumber"]
       first_name = m["FirstName"]
       last_name = m["LastName"]
@@ -24,11 +24,12 @@ class FlSyncJob < ActiveJob::Base
       activities = m["Activities"].to_i
       if !activity_ids.include?(activities)
         puts "Excluding member: #{name} where Activities is #{m['Activities']}"
+        next
       end
 
       u = User.find_by(member_id: id)
       if u
-        puts "Member #{name} already exists"
+        puts "Member #{name} (ID #{id}) already exists"
       else
         puts "Member #{name} does not exist"
         u = User.new
@@ -45,7 +46,15 @@ class FlSyncJob < ActiveJob::Base
       active_members << id
       u.save
     }
-    # TODO: Deactivate remaining members
+    # Deactivate remaining members
     puts "Found #{active_members.size} active members"
+    puts active_members.inspect
+    User.all.each { |u|
+      if !active_members.include? u.member_id
+        puts "Member #{u.name} (ID #{u.member_id}) is no longer active"
+        u.active = false
+        u.save
+      end
+    }
   end
 end

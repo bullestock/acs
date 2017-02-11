@@ -19,7 +19,7 @@ class UsersController < ApplicationController
       filter_params = { 'name' => { 'idx' => { 'o' => 'like', 'v' => filter_params } } }
       params[:filter] = filter_params
     end
-    users_scope = User.all_with_filter(params, User.all)
+    users_scope = User.all_with_filter(params, User.where(active: 1))
 
     @users = smart_listing_create :users, users_scope, partial: "users/list", page_sizes: [10000],
                                   sort_attributes: [[:fl_id, "fl_id"], [:name, "name"]]
