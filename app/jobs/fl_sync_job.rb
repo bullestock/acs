@@ -20,16 +20,17 @@ class FlSyncJob < ActiveJob::Base
       number = m["MemberNumber"]
       first_name = m["FirstName"]
       last_name = m["LastName"]
+      name = "#{first_name} #{last_name}"
       activities = m["Activities"].to_i
       if !activity_ids.include?(activities)
-        puts "Excluding member: #{first_name} #{last_name} where Activities is #{m['Activities']}"
+        puts "Excluding member: #{name} where Activities is #{m['Activities']}"
       end
 
       u = User.find_by(member_id: id)
       if u
-        puts "Member #{first_name} #{last_name} already exists"
+        puts "Member #{name} already exists"
       else
-        puts "Member #{first_name} #{last_name} does not exist"
+        puts "Member #{name} does not exist"
         u = User.new
         u.access_to = Array.new
         u.can_login = false
@@ -39,10 +40,8 @@ class FlSyncJob < ActiveJob::Base
       u.active = true
       u.member_id = id
       u.fl_id = number
-      u.first_name = first_name
-      u.last_name = last_name
+      u.name = name
       u.active = true
-      # update...
       active_members << id
       u.save
     }

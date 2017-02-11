@@ -13,7 +13,7 @@
       - smart_listing.collection.each do |user|
         %tr
         %td= user.fl_id
-        %td= "#{user.first_name} #{user.last_name}"
+        %td= user.name
         %td= user.card_id
         %td= user.machines.map(&:name).sort.join(", ")
         %td= check_box_tag :can_login, "1", user.can_login, disabled: true
