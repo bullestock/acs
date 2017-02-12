@@ -1,7 +1,5 @@
 %h1= "Users"
 
-= link_to 'Home', root_path
-
 = smart_listing_controls_for(:users, {class: "form-inline text-right"}) do
   -# Add search box to form - it submits the form automatically on text change
   .form-group.filter.input-append
