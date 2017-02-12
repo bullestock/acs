@@ -1,7 +1,5 @@
 class MachinesController < ApplicationController
 
-  http_basic_authenticate_with name: "torsten", password: "secret"
-
   def new
     @machine = Machine.new
   end

@@ -2,8 +2,6 @@ class UsersController < ApplicationController
   include SmartListing::Helper::ControllerExtensions
   helper SmartListing::Helper
   
-  http_basic_authenticate_with name: "torsten", password: "secret"
-
   def new
     @user = User.new
   end

@@ -40,16 +40,15 @@ class FlSyncJob < ActiveJob::Base
         #puts "Member #{name} does not exist"
         added_members << name
         u = User.new
-        u.access_to = Array.new
         u.can_login = false
         u.can_provision = false
         u.can_deprovision = false
+        u.password_digest = '*'
       end
       u.active = true
       u.member_id = id
       u.fl_id = number
       u.name = name
-      u.active = true
       u.login = login
       if !login || login.empty?
         nologin_members << name
@@ -60,7 +59,7 @@ class FlSyncJob < ActiveJob::Base
     # Deactivate remaining members
     User.all.each { |u|
       if !active_members.include? u.member_id
-        #puts "Member #{u.name} (ID #{u.member_id}) is no longer active"
+        puts "Member #{u.name} (ID #{u.member_id}) is no longer active"
         u.active = false
         u.save
       end
