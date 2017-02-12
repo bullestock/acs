@@ -1,18 +1,18 @@
 - unless smart_listing.empty?
   %table.table.table-striped
     %thead
-      %th= smart_listing.sortable "ID", :fl_id
-      %th= smart_listing.sortable "Name", :name
-      %th= "Card"
-      %th= "Access"
-      %th= "Login"
-      %th= "Provision"
-      %th= "Deprovision"
-      %th= ""
+      %th.col-md-1= smart_listing.sortable "ID", :fl_id
+      %th.col-md-2= smart_listing.sortable "Name", :name
+      %th.col-md-2= "Card"
+      %th.col-md-3= "Access"
+      %th.col-md-1= "Login"
+      %th.col-md-1= "Provision"
+      %th.col-md-1= "Deprovision"
+      %th.col-md-1= ""
     %tbody
       - smart_listing.collection.each do |user|
         %tr
-        %td= user.fl_id
+        %td.text-right= user.fl_id
         %td= user.name
         %td= user.card_id
         %td= user.machines.map(&:name).sort.join(", ")

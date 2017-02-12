@@ -1,4 +1,7 @@
 class MachinesController < ApplicationController
+  include SmartListing::Helper::ControllerExtensions
+  helper SmartListing::Helper
+  before_action :logged_in_user
 
   def new
     @machine = Machine.new
@@ -9,7 +12,9 @@ class MachinesController < ApplicationController
   end
 
   def index
-    @machines = Machine.all
+    @users = smart_listing_create :machines, Machine.all, partial: "machines/list", page_sizes: [10000],
+                                  sort_attributes: [[:name, "name"]],
+                                  default_sort: {name: "asc"}
   end
   
   def show

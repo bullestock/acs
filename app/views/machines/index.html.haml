@@ -2,17 +2,7 @@
 
 = link_to 'Home', root_path
 
-%table
-  %thead
-    %th Name
-    %th
-    %th
-  %tbody
-
-  - @machines.each do |machine|
-    %tr
-    %td= machine.name
-    %td= link_to 'Edit', edit_machine_path(machine)
+= smart_listing_render :machines
 
 = link_to 'New machine', new_machine_path
 %p
