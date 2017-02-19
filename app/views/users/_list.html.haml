@@ -5,9 +5,7 @@
       %th.col-md-2= smart_listing.sortable "Name", :name
       %th.col-md-2= "Card"
       %th.col-md-3= "Access"
-      %th.col-md-1= "Login"
-      %th.col-md-1= "Provision"
-      %th.col-md-1= "Deprovision"
+      %th.col-md-1= "Permissions"
       %th.col-md-1= ""
     %tbody
       - smart_listing.collection.each do |user|
@@ -16,10 +14,9 @@
         %td= user.name
         %td= user.card_id
         %td= user.machines.map(&:name).sort.join(", ")
-        %td= check_box_tag :can_login, "1", user.can_login, disabled: true
-        %td= check_box_tag :can_provision, "1", user.can_provision, disabled: true
-        %td= check_box_tag :can_deprovision, "1", user.can_deprovision, disabled: true
-        %td= link_to 'Edit', edit_user_path(user)
+        %td= user.permissions.map(&:name).sort.join(", ")
+        - if @current_user.permissions.map(&:name).include? 'admin'
+          %td= link_to 'Edit', edit_user_path(user)
   = smart_listing.paginate
 - else
   %p.warning No records!

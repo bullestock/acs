@@ -9,27 +9,40 @@
           %li= msg
 
   - no_login = !@user.login || @user.login.empty?
+  - is_admin = @current_user.permissions.map(&:name).include? 'admin'
+  - can_provision = is_admin || @current_user.permissions.map(&:name).include?('provision')
   %table
     %tbody
       %tr
         %td= f.label 'Name'
         %td= @user.name
       %tr
+        %td= '&nbsp;'.html_safe
+        %td= ''
+      %tr
         %td= f.label "Access"
         %td
-          = f.collection_check_boxes :machine_ids, Machine.all, :id, :name do |b|
-            .collection-check-box
-              = b.check_box
-              = b.label
+          - if can_provision
+            = f.collection_check_boxes :machine_ids, Machine.all, :id, :name do |b|
+              .collection-check-box
+                = b.check_box
+                = b.label
+          - else
+            = @user.machines.map(&:name).sort.join(", ")
       %tr
-        %td= f.label :can_login
-        %td= check_box "user", "can_login", {:checked => :can_login, :disabled => no_login }
+        %td= '&nbsp;'.html_safe
+        %td= ''
       %tr
-        %td= f.label :can_provision
-        %td= check_box "user", "can_provision", {:checked => :can_provision, :disabled => no_login }
-      %tr
-        %td= f.label :can_deprovision
-        %td= check_box "user", "can_deprovision", {:checked => :can_deprovision, :disabled => no_login }
-
+        %td
+          =f.label "Permissions"
+          &nbsp;&nbsp;&nbsp;
+        %td
+          - if is_admin
+            = f.collection_check_boxes :permission_ids, Permission.all, :id, :name, :disabled => []  do |b|
+              .collection-check-box
+                = b.check_box
+                = b.label
+          - else
+            = @user.permissions.map(&:name).sort.join(", ")
   %p
   = f.submit
