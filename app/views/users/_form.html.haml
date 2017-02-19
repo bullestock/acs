@@ -35,7 +35,6 @@
       %tr
         %td
           =f.label "Permissions"
-          &nbsp;&nbsp;&nbsp;
         %td
           - if is_admin
             = f.collection_check_boxes :permission_ids, Permission.all, :id, :name, :disabled => []  do |b|
@@ -44,5 +43,13 @@
                 = b.label
           - else
             = @user.permissions.map(&:name).sort.join(", ")
+      %tr
+        %td= f.label "Password"
+        %td= f.password_field :password
+      %tr
+        %td
+          = f.label "Confirm password"
+          &nbsp;&nbsp;&nbsp;
+        %td= f.password_field :password_confirmation
   %p
   = f.submit
