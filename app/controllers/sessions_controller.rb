@@ -1,26 +1,24 @@
 class SessionsController < ApplicationController
+
+  skip_before_action :logged_in_user
+
   def new
   end
+  
   def create
     user = User.find_by(login: params[:session][:login].downcase)
     if !user
       flash.now[:danger] = 'Unknown user'
       render 'new'
     elsif !user.password_digest || user.password_digest.empty?
-      if !user.email || user.email.empty?
-        flash.now[:danger] = 'User has no email'
-        render 'new'
-      else
-        # Send one.time password by mail
-        
-      end
+      flash.now[:danger] = 'User has no password'
+      render 'new'
     elsif user.authenticate(params[:session][:password])
-      # Log the user in and redirect to the user index.
       log_in user
-      redirect_to '/users'
+      redirect_to '/'
     else
-      # Create an error message.
-      flash.now[:danger] = 'Invalid email/password combination' # Not quite right!
+      logger.info 'Authentication failed'
+      flash.now[:danger] = 'Login failed'
       render 'new'
     end
   end

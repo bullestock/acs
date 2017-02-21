@@ -1,7 +1,7 @@
 class UsersController < ApplicationController
   include SmartListing::Helper::ControllerExtensions
   helper SmartListing::Helper
-  before_action :logged_in_user
+  before_action :provisioning_user
   
   def new
     @user = User.new
@@ -41,14 +41,12 @@ class UsersController < ApplicationController
 
     if @user.update(user_params)
       flash[:success] = "User updated"
-      redirect_to action: "index"
-    else
       render 'edit'
     end
   end
 
   private
   def user_params
-    params.require(:user).permit(:name, :password, :password_confirmation, permission_ids:[], machine_ids:[])
+    params.require(:user).permit(:name, :login, :password, :password_confirmation, permission_ids:[], machine_ids:[])
   end
 end

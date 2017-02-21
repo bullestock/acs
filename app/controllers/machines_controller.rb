@@ -1,7 +1,7 @@
 class MachinesController < ApplicationController
   include SmartListing::Helper::ControllerExtensions
   helper SmartListing::Helper
-  before_action :logged_in_user
+  before_action :admin_user
 
   def new
     @machine = Machine.new

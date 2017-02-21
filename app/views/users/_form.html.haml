@@ -7,10 +7,11 @@
       %ul
         - @user.errors.full_messages.each do |msg|
           %li= msg
-
-  - no_login = !@user.login || @user.login.empty?
-  - is_admin = @current_user.permissions.map(&:name).include? 'admin'
-  - can_provision = is_admin || @current_user.permissions.map(&:name).include?('provision')
+  - logger.info "User #{@user.inspect}"
+  - can_u_login = @user.login && !@user.login.empty? && !@user.password_digest.empty?
+  - is_cu_admin = @current_user.permissions.map(&:name).include?('admin')
+  - is_u_admin = @user.permissions.map(&:name).include?('admin')
+  - can_cu_provision = is_cu_admin || @current_user.permissions.map(&:name).include?('provision')
   %table
     %tbody
       %tr
@@ -22,27 +23,36 @@
       %tr
         %td= f.label "Access"
         %td
-          - if can_provision
+          - if can_cu_provision
             = f.collection_check_boxes :machine_ids, Machine.all, :id, :name do |b|
               .collection-check-box
                 = b.check_box
                 = b.label
           - else
-            = @user.machines.map(&:name).sort.join(", ")
+            - m = f.machines.map(&:name).sort.join(", ")
+            = m.empty? ? '(None)' : m
       %tr
         %td= '&nbsp;'.html_safe
         %td= ''
+      - if can_u_login
+        %tr
+          %td
+            =f.label "Permissions"
+          %td
+            - if is_cu_admin
+              = f.collection_check_boxes :permission_ids, Permission.all, :id, :name, :disabled => []  do |b|
+                .collection-check-box
+                  = b.check_box
+                  = b.label
+            - else
+              = f.permissions.map(&:name).sort.join(", ")
+
       %tr
-        %td
-          =f.label "Permissions"
-        %td
-          - if is_admin
-            = f.collection_check_boxes :permission_ids, Permission.all, :id, :name, :disabled => []  do |b|
-              .collection-check-box
-                = b.check_box
-                = b.label
-          - else
-            = @user.permissions.map(&:name).sort.join(", ")
+        %td= f.label "Login"
+        %td= f.text_field :login
+      %tr
+        %td= '&nbsp;'.html_safe
+        %td= ''
       %tr
         %td= f.label "Password"
         %td= f.password_field :password
