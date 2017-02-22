@@ -1,4 +1,5 @@
 - unless smart_listing.empty?
+  - can_provision = @current_user.permissions.map(&:name).include?('admin') || @current_user.permissions.map(&:name).include?('provision')
   %table.table.table-striped
     %thead
       %th.col-md-1= smart_listing.sortable "ID", :fl_id
@@ -15,7 +16,7 @@
         %td= user.card_id
         %td= user.machines.map(&:name).sort.join(", ")
         %td= user.permissions.map(&:name).sort.join(", ")
-        - if @current_user.permissions.map(&:name).include? 'admin'
+        - if can_provision
           %td= link_to 'Edit', edit_user_path(user)
   = smart_listing.paginate
 - else
