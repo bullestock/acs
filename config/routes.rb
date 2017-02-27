@@ -1,4 +1,6 @@
 Rails.application.routes.draw do
+  get 'logs/new'
+
   get 'permissions/new'
 
   get 'static_pages/home'
@@ -15,4 +17,5 @@ Rails.application.routes.draw do
 
   resources :users
   resources :machines
+  resources :logs
 end

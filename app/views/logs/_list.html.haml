@@ -1,0 +1,15 @@
+- unless smart_listing.empty?
+  %table.table.table-striped
+    %thead
+      %th.col-md-1= smart_listing.sortable "Timestamp", :stamp
+      %th.col-md-1= smart_listing.sortable "Machine", :machine_id
+      %th.col-md-5= "Message"
+    %tbody
+      - smart_listing.collection.each do |log|
+        %tr
+        %td.text-right= log.stamp
+        %td= log.machine.name
+        %td= log.message
+  = smart_listing.paginate
+- else
+  %p.warning No records
