@@ -24,6 +24,9 @@ Rails.application.routes.draw do
       scope '/logs' do
         post '/' => 'api_logs#create'
       end
+      scope '/permissions' do
+        get '/' => 'api_permissions#show'
+      end
     end
   end
 end
