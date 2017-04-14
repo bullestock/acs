@@ -40,9 +40,6 @@ class FlSyncJob < ActiveJob::Base
         #puts "Member #{name} does not exist"
         added_members << name
         u = User.new
-        u.can_login = false
-        u.can_provision = false
-        u.can_deprovision = false
         u.password_digest = '*'
       end
       u.active = true
