@@ -2,13 +2,21 @@
   %table.table.table-striped
     %thead
       %th.col-md-1= smart_listing.sortable "Timestamp", :stamp
+      %th.col-md-1= smart_listing.sortable "Logger", :logger_id
       %th.col-md-1= smart_listing.sortable "User", :user_id
       %th.col-md-5= "Message"
     %tbody
       - smart_listing.collection.each do |log|
         %tr
         %td.text-right= log.stamp
-        %td= log.user.name
+        %td= User.find_by(id: log.logger_id).name
+        %td
+          - if log.user_id
+            - u = User.find_by(id: log.user_id)
+            - if u
+              =u.name
+            - else
+              Unknown user: #{log.user_id}
         %td= log.message
   = smart_listing.paginate
 - else
