@@ -5,6 +5,15 @@ class LogsController < ApplicationController
   def new
   end
 
+  def create
+    logger.info "logs.create"
+    @log = Log.new(log_params)
+
+    @log.save
+    redirect_to @log
+  end
+
+
   def index
     # Apply the search control filter.
     filter_params = params[:filter]

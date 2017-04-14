@@ -18,4 +18,12 @@ Rails.application.routes.draw do
   resources :users
   resources :machines
   resources :logs
+
+  scope '/api' do
+    scope '/v1' do
+      scope '/logs' do
+        post '/' => 'api_logs#create'
+      end
+    end
+  end
 end
