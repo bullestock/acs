@@ -24,7 +24,7 @@ class LogsController < ApplicationController
     logs_scope = Log.all_with_filter(params, Log.all)
 
     @logs = smart_listing_create :logs, logs_scope, partial: "logs/list", page_sizes: [100],
-                                  sort_attributes: [[:stamp, "stamp"], [:machine_id, "machine_id"]],
+                                  sort_attributes: [[:stamp, "stamp"], [:user_id, "user_id"]],
                                   default_sort: {stamp: "desc"}
   end
   

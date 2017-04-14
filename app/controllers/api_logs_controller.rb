@@ -9,6 +9,7 @@ class ApiLogsController < BaseApiController
     a = @json['log']
     @log = Log.new
     @log.assign_attributes(a)
+    @log.user_id = @user.id
     if @log.save
       render json: @log
     else
