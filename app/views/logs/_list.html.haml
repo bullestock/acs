@@ -8,8 +8,8 @@
     %tbody
       - smart_listing.collection.each do |log|
         %tr
-        %td.text-right= log.stamp
-        %td= User.find_by(id: log.logger_id).name
+        %td.text-right= log.stamp.in_time_zone(Rails.configuration.display_time_zone).strftime('%Y %m %d %H:%M:%S')
+        %td= Machine.find_by(id: log.logger_id).name
         %td
           - if log.user_id
             - u = User.find_by(id: log.user_id)
