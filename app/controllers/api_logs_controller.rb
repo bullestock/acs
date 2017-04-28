@@ -6,17 +6,21 @@ class ApiLogsController < BaseApiController
   end
 
   def create
-    a = @json['log']
-    @log = Log.new
-    @log.assign_attributes(a)
-    @log.logger_id = @user.id
-    if @json['log']['user_id']
-      @log.user_id = @json['log']['user_id']
-    end
-    if @log.save
-      render json: @log
+    if !@machine
+      render nothing: true, status: :forbidden
     else
-      render nothing: true, status: :bad_request
+      a = @json['log']
+      @log = Log.new
+      @log.assign_attributes(a)
+      @log.logger_id = @machine.id
+      if @json['log']['user_id']
+        @log.user_id = @json['log']['user_id']
+      end
+      if @log.save
+        render json: @log
+      else
+        render nothing: true, status: :bad_request
+      end
     end
   end
 end
