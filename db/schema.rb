@@ -11,15 +11,23 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20170207220452) do
+ActiveRecord::Schema.define(version: 20170428195241) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
+
+  create_table "logs", force: :cascade do |t|
+    t.datetime "stamp"
+    t.string   "message"
+    t.integer  "logger_id", null: false
+    t.integer  "user_id"
+  end
 
   create_table "machines", force: :cascade do |t|
     t.string   "name"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string   "api_token"
   end
 
   create_table "machines_users", id: false, force: :cascade do |t|
@@ -27,17 +35,26 @@ ActiveRecord::Schema.define(version: 20170207220452) do
     t.integer "user_id",    null: false
   end
 
+  create_table "permissions", force: :cascade do |t|
+    t.string   "name"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "permissions_users", id: false, force: :cascade do |t|
+    t.integer "permission_id", null: false
+    t.integer "user_id",       null: false
+  end
+
   create_table "users", force: :cascade do |t|
     t.integer "fl_id"
     t.integer "member_id"
-    t.string  "first_name"
-    t.string  "last_name"
     t.string  "display_name"
     t.boolean "active"
     t.string  "card_id"
-    t.boolean "can_login"
-    t.boolean "can_provision"
-    t.boolean "can_deprovision"
+    t.string  "name"
+    t.string  "login"
+    t.string  "password_digest"
   end
 
 end

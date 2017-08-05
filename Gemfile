@@ -50,3 +50,6 @@ end
 
 gem 'skins'
 gem 'haml'
+gem 'smart_listing'
+gem 'bootstrap-sass', '~> 3.3.6'
+gem 'bcrypt'

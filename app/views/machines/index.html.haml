@@ -1,19 +1,6 @@
 %h1 Machines
 
-= link_to 'Home', root_path
+= smart_listing_render :machines
 
-%table
-  %thead
-    %th Name
-    %th
-    %th
-  %tbody
+%h2= link_to 'Add machine', new_machine_path
 
-  - @machines.each do |machine|
-    %tr
-    %td= machine.name
-    %td= link_to 'Edit', edit_machine_path(machine)
-
-= link_to 'New machine', new_machine_path
-%p
-= link_to 'Home', root_path

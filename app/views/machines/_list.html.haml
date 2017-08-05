@@ -1,0 +1,13 @@
+- unless smart_listing.empty?
+  %table.table.table-striped
+    %thead
+      %th.col-md-3 Name
+      %th
+    %tbody
+      - smart_listing.collection.each do |machine|
+        %tr
+        %td= machine.name
+        %td= link_to 'Edit', edit_machine_path(machine)
+  = smart_listing.paginate
+- else
+  %p.warning No records!

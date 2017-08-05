@@ -15,38 +15,55 @@ class FlSyncJob < ActiveJob::Base
     members = JSON.parse(RestClient.get(url, {accept: :json}))
     activity_ids = secret['activity_ids']
     active_members = Array.new
+    updated_members = Array.new
+    added_members = Array.new
+    nologin_members = Array.new
+    excluded_members = Array.new
     members.each { |m|
-      id = m["MemberId"]
+      id = m["MemberId"].to_i
       number = m["MemberNumber"]
       first_name = m["FirstName"]
       last_name = m["LastName"]
+      login = m["MemberField6"]
+      name = "#{first_name} #{last_name}"
       activities = m["Activities"].to_i
       if !activity_ids.include?(activities)
-        puts "Excluding member: #{first_name} #{last_name} where Activities is #{m['Activities']}"
+        excluded_members << name
+        next
       end
 
       u = User.find_by(member_id: id)
       if u
-        puts "Member #{first_name} #{last_name} already exists"
+        #puts "Member #{name} (ID #{id}) already exists"
+        updated_members << name
       else
-        puts "Member #{first_name} #{last_name} does not exist"
+        #puts "Member #{name} does not exist"
+        added_members << name
         u = User.new
-        u.access_to = Array.new
-        u.can_login = false
-        u.can_provision = false
-        u.can_deprovision = false
+        u.password_digest = '*'
       end
       u.active = true
       u.member_id = id
       u.fl_id = number
-      u.first_name = first_name
-      u.last_name = last_name
-      u.active = true
-      # update...
+      u.name = name
+      u.login = login
+      if !login || login.empty?
+        nologin_members << name
+      end
       active_members << id
       u.save
     }
-    # TODO: Deactivate remaining members
-    puts "Found #{active_members.size} active members"
+    # Deactivate remaining members
+    User.all.each { |u|
+      if !active_members.include? u.member_id
+        puts "Member #{u.name} (ID #{u.member_id}) is no longer active"
+        u.active = false
+        u.save
+      end
+    }
+    # Output statistics
+    puts "Updated #{updated_members.size}, added #{added_members.size}, excluded #{excluded_members.size}."
+    puts "Total #{active_members.size} active members."
+    puts "#{nologin_members.size} members have no login."
   end
 end

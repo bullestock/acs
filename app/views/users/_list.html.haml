@@ -1,0 +1,23 @@
+- unless smart_listing.empty?
+  - can_provision = @current_user.permissions.map(&:name).include?('admin') || @current_user.permissions.map(&:name).include?('provision')
+  %table.table.table-striped
+    %thead
+      %th.col-md-1= smart_listing.sortable "ID", :fl_id
+      %th.col-md-2= smart_listing.sortable "Name", :name
+      %th.col-md-2= "Card"
+      %th.col-md-3= "Access"
+      %th.col-md-1= "Permissions"
+      %th.col-md-1= ""
+    %tbody
+      - smart_listing.collection.each do |user|
+        %tr
+        %td.text-right= user.fl_id
+        %td= user.name
+        %td= user.card_id
+        %td= user.machines.map(&:name).sort.join(", ")
+        %td= user.permissions.map(&:name).sort.join(", ")
+        - if can_provision
+          %td= link_to 'Edit', edit_user_path(user)
+  = smart_listing.paginate
+- else
+  %p.warning No records!

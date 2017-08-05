@@ -7,28 +7,63 @@
       %ul
         - @user.errors.full_messages.each do |msg|
           %li= msg
-
+  - logger.info "User #{@user.inspect}"
+  - can_u_login = @user.login && !@user.login.empty? && !@user.password_digest.empty?
+  - is_cu_admin = @current_user.permissions.map(&:name).include?('admin')
+  - is_u_admin = @user.permissions.map(&:name).include?('admin')
+  - can_cu_provision = is_cu_admin || @current_user.permissions.map(&:name).include?('provision')
   %table
     %tbody
       %tr
         %td= f.label 'Name'
-        %td= "#{@user.first_name} #{@user.last_name}"
+        %td= @user.name
+      %tr
+        %td= '&nbsp;'.html_safe
+        %td= ''
       %tr
         %td= f.label "Access"
         %td
-          = f.collection_check_boxes :machine_ids, Machine.all, :id, :name do |b|
-            .collection-check-box
-              = b.check_box
-              = b.label
+          - if can_cu_provision
+            = f.collection_check_boxes :machine_ids, Machine.all, :id, :name do |b|
+              .collection-check-box
+                = b.check_box
+                = b.label
+          - else
+            - m = f.machines.map(&:name).sort.join(", ")
+            = m.empty? ? '(None)' : m
       %tr
-        %td= f.label :can_login
-        %td= check_box "user", "can_login", {:checked => :can_login }
-      %tr
-        %td= f.label :can_provision
-        %td= check_box "user", "can_provision", {:checked => :can_provision }
-      %tr
-        %td= f.label :can_deprovision
-        %td= check_box "user", "can_deprovision", {:checked => :can_deprovision }
+        %td= '&nbsp;'.html_safe
+        %td= ''
+      - if can_u_login
+        %tr
+          %td
+            =f.label "Permissions"
+            &nbsp;&nbsp;&nbsp;
+          %td
+            - if is_cu_admin
+              = f.collection_check_boxes :permission_ids, Permission.all, :id, :name, :disabled => []  do |b|
+                .collection-check-box
+                  = b.check_box
+                  = b.label
+            - else
+              = @user.permissions.map(&:name).sort.join(", ")
 
+      %tr
+        %td= f.label "Login"
+        - if is_cu_admin || @current_user == @user
+          %td= f.text_field :login
+          %tr
+            %td= '&nbsp;'.html_safe
+            %td= ''
+          %tr
+            %td= f.label "Password"
+            %td= f.password_field :password
+          %tr
+            %td
+              = f.label "Confirm password"
+              &nbsp;&nbsp;&nbsp;
+            %td= f.password_field :password_confirmation
+        - else
+          %td= @user.login
   %p
   = f.submit
