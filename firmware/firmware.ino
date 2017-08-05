@@ -1,9 +1,5 @@
 #include "FastLED.h"
 
-#define BRIGHTNESS  255
-#define LED_TYPE    WS2811
-#define COLOR_ORDER RGB
-
 CRGB led;
 int r = 255;
 int g = 255;
@@ -23,12 +19,16 @@ State state = STATE_BLINK;
 const int LED_PIN = 2;
 const int GREEN_SW_PIN = 10;
 const int RED_SW_PIN = 11;
+const int RELAY_PIN = 12;
 
 void setup()
 {
-  FastLED.addLeds<WS2811, LED_PIN, COLOR_ORDER>(&led, 1).setCorrection(TypicalLEDStrip);
-  FastLED.setBrightness(BRIGHTNESS);
+  FastLED.addLeds<WS2811, LED_PIN, RGB>(&led, 1).setCorrection(TypicalLEDStrip);
+  FastLED.setBrightness(255);
 
+  pinMode(RELAY_PIN, OUTPUT);
+  digitalWrite(RELAY_PIN, 0);
+  
   Serial.begin(115200);
   Serial.println("ACS firmware v 0.1");
 }
@@ -55,6 +55,8 @@ void loop()
             buf[buf_index+1] = 0;
             if (buf[0] == 'C')
             {
+                // Set steady colour
+                // C<r><g><b>
                 r = get_color(buf, 1);
                 g = get_color(buf, 4);
                 b = get_color(buf, 7);
@@ -62,6 +64,8 @@ void loop()
             }
             else if (buf[0] == 'B')
             {
+                // Set blink colours
+                // B<r1><g1><b1><r2><g2><b2>
                 r = get_color(buf, 1);
                 g = get_color(buf, 4);
                 b = get_color(buf, 7);
@@ -72,7 +76,15 @@ void loop()
             }
             else if (buf[0] == 'D')
             {
+                // Set blink speed
+                // D<speed>
                 blink_speed = get_color(buf, 1);
+            }
+            else if (buf[0] == 'L')
+            {
+                // Control lock
+                // L<on>
+                digitalWrite(RELAY_PIN, buf[1] == '1');
             }
             else
             {
