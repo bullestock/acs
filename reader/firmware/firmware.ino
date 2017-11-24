@@ -1,3 +1,5 @@
+#include <ctype.h>
+
 #include <RDM6300.h>
 #include <SoftwareSerial.h>
 
@@ -13,7 +15,7 @@ SoftwareSerial swSerial(PIN_RX, PIN_TX);
 void setup()
 {
     Serial.begin(115200);
-    Serial.println("Cardreader v 0.2");
+    Serial.println("Cardreader v 0.3");
     swSerial.begin(9600);
 
     pinMode(PIN_GREEN, OUTPUT);
@@ -23,17 +25,163 @@ void setup()
 RDM6300 decoder;
 int n = 0;
 
-enum State
+const int MAX_SEQ_SIZE = 500;
+enum class Sequence
 {
-    STATE_IDLE,
-    STATE_ERROR,
-    STATE_ENTER
+    Red,
+    Green,
+    Both,
+    None
 };
+char sequence[MAX_SEQ_SIZE];
+int sequence_len = 0;
+int sequence_index = 0;
+int sequence_period = 0;
+int sequence_repeats = 0;
+int sequence_iteration = 0;
 
-State state = STATE_IDLE;
-unsigned long last_state_tick = 0;
+bool parse_int(const char* line, int& index, int& value)
+{
+    if (!isdigit(line[index]))
+    {
+        Serial.print("Expected number, got ");
+        Serial.println(line[index]);
+        return false;
+    }
+    value = 0;
+    while (isdigit(line[index]))
+    {
+        value = value*10 + line[index] - '0';
+        ++index;
+    }
+    return true;
+}
 
-const unsigned long STATE_DURATION = 3000;
+bool fill_seq(char* seq, int& index, int reps, Sequence elem)
+{
+    while (reps--)
+    {
+        if (index >= MAX_SEQ_SIZE)
+        {
+            Serial.println("Sequence too long");
+            return false;
+        }
+        seq[index++] = (char) elem;
+    }
+    return true;
+}
+
+void decode_line(const char* line)
+{
+    int i = 0;
+    if (tolower(line[i]) != 'p')
+    {
+        Serial.println("Line must begin with P");
+        return;
+    }
+    ++i;
+    int period = 0;
+    if (!parse_int(line, i, period))
+    {
+        Serial.println("Period must follow P");
+        return;
+    }
+    if (tolower(line[i]) != 'r')
+    {
+        Serial.print("Period must be followed by R, got ");
+        Serial.println(line[i]);
+        return;
+    }
+    ++i;
+    int repeats = 0;
+    if (!parse_int(line, i, repeats))
+    {
+        Serial.println("Repeats must follow R");
+        return;
+    }
+    if (tolower(line[i]) != 's')
+    {
+        Serial.print("Repeats must be followed by S, got ");
+        Serial.println(line[i]);
+        return;
+    }
+    ++i;
+    char seq[MAX_SEQ_SIZE];
+    int seq_len = 0;
+    while (line[i])
+    {
+        if (seq_len == MAX_SEQ_SIZE)
+        {
+            Serial.println("Sequence too long");
+            return;
+        }
+        switch (tolower(line[i]))
+        {
+        case 'r':
+            seq[seq_len++] = (char) Sequence::Red;
+            break;
+        case 'g':
+            seq[seq_len++] = (char) Sequence::Green;
+            break;
+        case 'b':
+            seq[seq_len++] = (char) Sequence::Both;
+            break;
+        case 'n':
+            seq[seq_len++] = (char) Sequence::None;
+            break;
+        case 'x':
+            {
+                int reps = 0;
+                ++i;
+                if (!parse_int(line, i, reps))
+                {
+                    Serial.println("X must be followed by repeats");
+                    return;
+                }
+                switch (tolower(line[i]))
+                {
+                case 'r':
+                    if (!fill_seq(seq, seq_len, reps, Sequence::Red))
+                        return;
+                    break;
+                case 'g':
+                    if (!fill_seq(seq, seq_len, reps, Sequence::Green))
+                        return;
+                    break;
+                case 'b':
+                    if (!fill_seq(seq, seq_len, reps, Sequence::Both))
+                        return;
+                    break;
+                case 'n':
+                    if (!fill_seq(seq, seq_len, reps, Sequence::None))
+                        return;
+                    break;
+                default:
+                    Serial.print("Unexpected character after X: ");
+                    Serial.println(line[i]);
+                    return;
+                }
+            }
+            break;
+        default:
+            Serial.print("Unexpected sequence character: ");
+            Serial.println(line[i]);
+            return;
+        }
+        ++i;
+    }
+    sequence_index = 0;
+    sequence_period = period;
+    sequence_repeats = repeats;
+    sequence_iteration = 0;
+    for (int i = 0; i < seq_len; ++i)
+        sequence[i] = seq[i];
+    sequence_len = seq_len;
+}
+
+const int MAX_LINE_LENGTH = 80;
+char line[MAX_LINE_LENGTH+1];
+int line_len = 0;
 
 void loop()
 {
@@ -45,63 +193,60 @@ void loop()
     if (Serial.available())
     {
         const char c = Serial.read();
-        switch (c)
+        if ((c == '\r') || (c == '\n'))
         {
-        case 'E':
-            // Error
-            state = STATE_ERROR;
-            last_state_tick = millis();
-            break;
-
-        case 'A':
-            // Entry allowed
-            state = STATE_ENTER;
-            last_state_tick = millis();
-            break;
-
-        default:
-            break;
+            line[line_len] = 0;
+            line_len = 0;
+            decode_line(line);
+        }
+        else if (line_len < MAX_LINE_LENGTH)
+            line[line_len++] = c;
+        else
+        {
+            Serial.println("Line too long");
+            line_len = 0;
         }
     }
 
-    switch (state)
+    if (sequence_index >= sequence_len)
     {
-    case STATE_IDLE:
+        sequence_index = 0;
+        if (sequence_repeats > 0)
         {
-            const bool green_on = n > 995;
-            digitalWrite(PIN_LED, green_on);
-            digitalWrite(PIN_GREEN, green_on);
-            digitalWrite(PIN_RED, false);
+            if (sequence_iteration >= sequence_repeats)
+            {
+                // Done
+                digitalWrite(PIN_GREEN, false);
+                digitalWrite(PIN_RED, false);
+                sequence_len = 0;
+                decode_line("P5R0SGX199N");
+                return;
+            }
+            ++sequence_iteration;
         }
-        break;
-
-    case STATE_ERROR:
+    }
+    if (sequence_index < sequence_len)
+    {
+        switch ((Sequence) sequence[sequence_index++])
         {
-            const bool red_on = (n % 200) > 100;
-            digitalWrite(PIN_LED, false);
+        case Sequence::Red:
             digitalWrite(PIN_GREEN, false);
-            digitalWrite(PIN_RED, red_on);
-        }
-        break;
-
-    case STATE_ENTER:
-        {
-            const bool green_on = (n % 500) > 250;
-            digitalWrite(PIN_LED, green_on);
-            digitalWrite(PIN_GREEN, green_on);
+            digitalWrite(PIN_RED, true);
+            break;
+        case Sequence::Green:
+            digitalWrite(PIN_GREEN, true);
             digitalWrite(PIN_RED, false);
+            break;
+        case Sequence::Both:
+            digitalWrite(PIN_GREEN, true);
+            digitalWrite(PIN_RED, true);
+            break;
+        case Sequence::None:
+            digitalWrite(PIN_GREEN, false);
+            digitalWrite(PIN_RED, false);
+            break;
         }
-        break;
     }
-
-    if (state != STATE_IDLE)
-    {
-        const auto elapsed = millis() - last_state_tick;
-        if (elapsed >= STATE_DURATION)
-            state = STATE_IDLE;
-    }
-    
-    if (++n > 1000)
-        n = 0;
-    delay(1);
+    digitalWrite(PIN_LED, (sequence_index % 2) == 0);
+    delay(sequence_period);
 }
