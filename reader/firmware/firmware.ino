@@ -15,7 +15,7 @@ SoftwareSerial swSerial(PIN_RX, PIN_TX);
 void setup()
 {
     Serial.begin(115200);
-    Serial.println("Cardreader v 0.3");
+    Serial.println("Cardreader v 0.4");
     swSerial.begin(9600);
 
     pinMode(PIN_GREEN, OUTPUT);
@@ -37,7 +37,7 @@ char sequence[MAX_SEQ_SIZE];
 int sequence_len = 0;
 int sequence_index = 0;
 int sequence_period = 0;
-int sequence_repeats = 0;
+int sequence_repeats = 1; // to force idle sequence on startup
 int sequence_iteration = 0;
 
 bool parse_int(const char* line, int& index, int& value)
@@ -183,13 +183,30 @@ const int MAX_LINE_LENGTH = 80;
 char line[MAX_LINE_LENGTH+1];
 int line_len = 0;
 
+unsigned long card_flash_start = 0;
+bool card_flash_active = false;
+
 void loop()
 {
     const auto c = swSerial.read();
     if (c > 0)
         if (decoder.add_byte(c))
+        {
             Serial.println(decoder.get_id());
+            card_flash_active = true;
+            card_flash_start = millis();
+        }
 
+    if (card_flash_active)
+    {
+        digitalWrite(PIN_GREEN, true);
+        digitalWrite(PIN_RED, true);
+        delay(10);
+        if (millis() - card_flash_start > 1000)
+            card_flash_active = false;
+        return;
+    }
+    
     if (Serial.available())
     {
         const char c = Serial.read();
