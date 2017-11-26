@@ -15,7 +15,7 @@ SoftwareSerial swSerial(PIN_RX, PIN_TX);
 void setup()
 {
     Serial.begin(115200);
-    Serial.println("Cardreader v 0.4");
+    Serial.println("Cardreader v 0.5");
     swSerial.begin(9600);
 
     pinMode(PIN_GREEN, OUTPUT);
@@ -36,7 +36,8 @@ enum class Sequence
 char sequence[MAX_SEQ_SIZE];
 int sequence_len = 0;
 int sequence_index = 0;
-int sequence_period = 0;
+int sequence_period = 1;
+int delay_counter = 0;
 int sequence_repeats = 1; // to force idle sequence on startup
 int sequence_iteration = 0;
 
@@ -84,6 +85,11 @@ void decode_line(const char* line)
     if (!parse_int(line, i, period))
     {
         Serial.println("Period must follow P");
+        return;
+    }
+    if (period <= 0)
+    {
+        Serial.println("Period cannot be zero");
         return;
     }
     if (tolower(line[i]) != 'r')
@@ -188,6 +194,8 @@ bool card_flash_active = false;
 
 void loop()
 {
+    delay(1);
+
     const auto c = swSerial.read();
     if (c > 0)
         if (decoder.add_byte(c))
@@ -206,7 +214,11 @@ void loop()
             card_flash_active = false;
         return;
     }
-    
+
+    if (++delay_counter < sequence_period)
+        return;
+    delay_counter = 0;
+       
     if (Serial.available())
     {
         const char c = Serial.read();
@@ -265,5 +277,4 @@ void loop()
         }
     }
     digitalWrite(PIN_LED, (sequence_index % 2) == 0);
-    delay(sequence_period);
 }
