@@ -26,6 +26,7 @@ Rails.application.routes.draw do
       end
       scope '/permissions' do
         get '/' => 'api_permissions#show'
+        post '/' => 'api_permissions#show'
       end
     end
   end
