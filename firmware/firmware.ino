@@ -1,36 +1,35 @@
-#include "FastLED.h"
+#include "SPI.h"
+#include "TFT_22_ILI9225.h"
 
-CRGB led;
-int r = 255;
-int g = 255;
-int b = 0;
-int r2 = 128, g2 = 0, b2 = 128;
-bool first_colour = true;
-int iterations = 0;
-int blink_speed = 40;
-enum State
-{
-    STATE_STEADY,
-    STATE_BLINK
-};
+const int GREEN_SW_PIN = 5;
+const int RED_SW_PIN = 6;
 
-State state = STATE_BLINK;
-
-const int LED_PIN = 2;
-const int GREEN_SW_PIN = 10;
-const int RED_SW_PIN = 11;
 const int RELAY_PIN = 12;
+
+const int TFT_RST = 8;
+const int TFT_RS = 9;
+const int TFT_CS = 10;   // SS
+const int TFT_SDI = 11;  // MOSI
+const int TFT_CLK = 13;  // SCK
+const int TFT_LED = 7;
+
+const int TFT_BRIGHTNESS = 200;
+
+TFT_22_ILI9225 tft = TFT_22_ILI9225(TFT_RST, TFT_RS, TFT_CS, TFT_LED, TFT_BRIGHTNESS);
 
 void setup()
 {
-  FastLED.addLeds<WS2811, LED_PIN, RGB>(&led, 1).setCorrection(TypicalLEDStrip);
-  FastLED.setBrightness(255);
-
   pinMode(RELAY_PIN, OUTPUT);
   digitalWrite(RELAY_PIN, 0);
   
+  tft.begin();
+
   Serial.begin(115200);
-  Serial.println("ACS firmware v 0.1");
+  Serial.println("ACS firmware v 0.2");
+
+  tft.drawRectangle(0, 0, tft.maxX() - 1, tft.maxY() - 1, COLOR_WHITE);
+  tft.setFont(Terminal6x8);
+  tft.drawText(10, 10, "hello!");
 }
 
 const int BUF_SIZE = 50;
@@ -38,11 +37,6 @@ char buf[BUF_SIZE+1];
 int buf_index = 0;
 
 int count = 0;
-
-int get_color(const char* buf, int offset)
-{
-    return (buf[offset] - '0')*100 + (buf[offset+1] - '0')*10 + (buf[offset+2] - '0');
-}
 
 void loop()
 {
@@ -53,34 +47,7 @@ void loop()
         if ((c == '\r') || (c == '\n'))
         {
             buf[buf_index+1] = 0;
-            if (buf[0] == 'C')
-            {
-                // Set steady colour
-                // C<r><g><b>
-                r = get_color(buf, 1);
-                g = get_color(buf, 4);
-                b = get_color(buf, 7);
-                state = STATE_STEADY;
-            }
-            else if (buf[0] == 'B')
-            {
-                // Set blink colours
-                // B<r1><g1><b1><r2><g2><b2>
-                r = get_color(buf, 1);
-                g = get_color(buf, 4);
-                b = get_color(buf, 7);
-                r2 = get_color(buf, 10);
-                g2 = get_color(buf, 13);
-                b2 = get_color(buf, 16);
-                state = STATE_BLINK;
-            }
-            else if (buf[0] == 'D')
-            {
-                // Set blink speed
-                // D<speed>
-                blink_speed = get_color(buf, 1);
-            }
-            else if (buf[0] == 'L')
+            if (buf[0] == 'L')
             {
                 // Control lock
                 // L<on>
@@ -104,29 +71,6 @@ void loop()
         }
     }
 
-    switch (state)
-    {
-    case STATE_STEADY:
-        led.r = r; led.g = g; led.b = b;
-        break;
-
-    case STATE_BLINK:
-        if (first_colour)
-        {
-            led.r = r; led.g = g; led.b = b;
-        }
-        else
-        {
-            led.r = r2; led.g = g2; led.b = b2;
-        }
-        if (++iterations > blink_speed)
-        {
-            iterations = 0;
-            first_colour = !first_colour;
-        }
-        break;
-    }
-
     ++count;
     if (count > 10)
     {
@@ -136,6 +80,4 @@ void loop()
         Serial.println(!digitalRead(GREEN_SW_PIN));
     }
     
-    FastLED.show();
-    FastLED.delay(1);
 }
