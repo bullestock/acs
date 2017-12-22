@@ -1,0 +1,40 @@
+
+'P' <period in ms> 'R' <number of repeats> 'S' <sequence>
+
+<period in ms> := integer
+
+<number of repeats> := integer
+
+Zero = repeat forever
+
+<sequence> := <element>> | <sequence> <element>
+
+<element> := <colour> | 'X' <repeats> <colour>
+
+<colour> := 'R' | 'G' | 'B' | 'N'
+
+Examples:
+
+Alternate flash:
+
+P100R0SRG
+
+Idle:
+
+P5R0SGX199N
+
+Error:
+
+P100R30SRN
+
+Enter:
+
+P250R12SGN
+
+Warn:
+
+P5R0SGX10NX100RX100N
+
+Psycho:
+
+P40R0SGNRNBN
