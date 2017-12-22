@@ -12,3 +12,4 @@
 !/log/.keep
 /tmp
 secret.yml
+/reader/apikey.txt
