@@ -17,7 +17,11 @@ class ApiPermissionsController < BaseApiController
         logger.info "User ID: #{user.id} #{user.name}"
         is_allowed = user.machines.map(&:name).include?(@machine.name)
         logger.info "Allowed: #{is_allowed}"
-        render json: { 'allowed' => is_allowed }
+        render json: {
+	  'allowed' => is_allowed, 
+	  'id' => user.id,
+	  'name' => user.name
+	}
       end
     end
   end

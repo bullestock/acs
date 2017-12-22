@@ -2,6 +2,7 @@ require 'rest-client'
 require 'json'
 
 class FlSyncJob < ActiveJob::Base
+  include SuckerPunch::Job
   queue_as :default
 
   def self.perform(*args)
