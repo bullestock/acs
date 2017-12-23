@@ -47,20 +47,11 @@ void setup()
   tft.drawText(30, 140, "Access Control", COLOR_GREEN);
   tft.setFont(Terminal6x8);
   tft.drawText(100, 158, version, COLOR_GREEN);
-
-  delay(2000);
-  tft.clear();
-  tft.drawBitmap(0, 0, logo_small_a, 132, 36, COLOR_WHITE);
-  tft.drawBitmap(220-86, 0, logo_small_b, 86, 36, COLOR_RED);
-  tft.setFont(Terminal12x16);
-  tft.drawText(80, 140, "Waiting...", COLOR_GREEN);
 }
 
 const int BUF_SIZE = 50;
 char buf[BUF_SIZE+1];
 int buf_index = 0;
-
-int count = 0;
 
 const int colours[] =
 {
@@ -105,6 +96,10 @@ const int colours[] =
     COLOR_YELLOW
 };
 
+int count = 0;
+
+bool drawn_logo = false;
+
 void loop()
 {
     if (Serial.available())
@@ -123,7 +118,15 @@ void loop()
                 break;
             case 'C':
                 // Clear screen
-                tft.fillRectangle(0, lcd_top, ILI9225_LCD_HEIGHT-1, ILI9225_LCD_WIDTH-1, COLOR_BLACK);
+                if (!drawn_logo)
+                {
+                    drawn_logo = true;
+                    tft.clear();
+                    tft.drawBitmap(0, 0, logo_small_a, 132, 36, COLOR_WHITE);
+                    tft.drawBitmap(220-86, 0, logo_small_b, 86, 36, COLOR_RED);
+                }
+                else
+                    tft.fillRectangle(0, lcd_top, ILI9225_LCD_HEIGHT-1, ILI9225_LCD_WIDTH-1, COLOR_BLACK);
                 break;
             case 'E':
                 {
