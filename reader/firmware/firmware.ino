@@ -15,7 +15,7 @@ SoftwareSerial swSerial(PIN_RX, PIN_TX);
 void setup()
 {
     Serial.begin(115200);
-    Serial.println("Cardreader v 0.5");
+    Serial.println("ACS cardreader v 0.5");
     swSerial.begin(9600);
 
     pinMode(PIN_GREEN, OUTPUT);
