@@ -24,17 +24,30 @@ def find_port()
   for p in 0..1
     port = "/dev/ttyUSB#{p}"
     puts "Trying #{port}"
-    sp = SerialPort.new(port
-                        { 'baud' => 115200,
-                          'data_bits' => 8,
-                          'parity' => SerialPort::NONE
-                        })
     begin
-      line = $sp.gets
-    end while !line || line.empty?
-    line.strip!
-    puts "Response: $line"
+      sp = SerialPort.new(port,
+                          { 'baud' => 115200,
+                            'data_bits' => 8,
+                            'parity' => SerialPort::NONE
+                          })
+      if sp
+        puts "Found"
+        begin
+          begin
+            line = sp.gets
+          end while !line || line.empty?
+          line.strip!
+          puts "Response: #{line}"
+          if line.include? "ACS" and line.include? "cardreader"
+            return port
+          end
+        end
+      end
+    rescue
+      # No port here
+    end
   end
+  return nil
 end
 
 port = '/dev/ttyUSB0'
@@ -42,6 +55,11 @@ if ARGV.size > 0
   port = ARGV[0]
 else
   port = find_port()
+end
+
+if !port
+  puts("Fatal error: No port found")
+  Process.exit
 end
 
 sp = SerialPort.new(port,
