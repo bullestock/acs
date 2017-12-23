@@ -35,7 +35,7 @@ void setup()
   tft.begin();
 
   Serial.begin(115200);
-  Serial.print("ACS firmware v ");
+  Serial.print("ACS UI v ");
   Serial.println(version);
 
   tft.setOrientation(1);
