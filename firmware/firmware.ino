@@ -26,8 +26,54 @@ TFT_22_ILI9225 tft = TFT_22_ILI9225(TFT_RST, TFT_RS, TFT_CS, TFT_LED, TFT_BRIGHT
 const int lcd_top = 38;
 const int lcd_line_height_large = 18;
 const int lcd_line_height_small = 10;
-const int lcd_last_large_line = (ILI9225_LCD_HEIGHT - lcd_top)/lcd_line_height_large - 1;
-const int lcd_last_small_line = (ILI9225_LCD_HEIGHT - lcd_top)/lcd_line_height_small - 1;
+const int lcd_last_large_line = (ILI9225_LCD_WIDTH - lcd_top)/lcd_line_height_large - 1;
+const int lcd_last_small_line = (ILI9225_LCD_WIDTH - lcd_top)/lcd_line_height_small - 1;
+
+void drawLargeLogo(int offset)
+{
+    if (offset == 0)
+    {
+        tft.drawBitmap(0, 0, logo_large_a, 220-offset, 62, COLOR_WHITE, COLOR_BLACK);
+        tft.drawBitmap(0, 66, logo_large_b, 220-offset, 60, COLOR_RED, COLOR_BLACK);
+        return;
+    }
+    tft.fillRectangle(offset-1, 0, offset-1, 62, COLOR_BLACK);
+    tft.drawBitmap(offset, 0, logo_large_a, 220, 62, COLOR_WHITE, COLOR_BLACK);
+    tft.drawBitmap(offset, 66, logo_large_b, 220, 60, COLOR_RED, COLOR_BLACK);
+}
+
+void drawSmallLogo(int offset)
+{
+    if (offset == 0)
+    {
+        tft.drawBitmap(0, 0, logo_small_a, 132, 36, COLOR_WHITE);
+        tft.drawBitmap(220-86, 0, logo_small_b, 86, 36, COLOR_RED);
+        return;
+    }
+    tft.fillRectangle(offset-1, 0, offset-1, 36, COLOR_BLACK);
+    tft.drawBitmap(offset, 0, logo_small_a, 132, 36, COLOR_WHITE, COLOR_BLACK);
+    if (offset < 220-86)
+        tft.drawBitmap(offset+220-86, 0, logo_small_b, 86, 36, COLOR_RED, COLOR_BLACK);
+#if 0
+    // Doesn't look quite right
+    else if (offset > 220-86+8)
+        tft.drawBitmap(offset-ILI9225_LCD_HEIGHT, 0, logo_small_b, 86, 36, COLOR_RED, COLOR_BLACK);
+#endif
+}
+    
+bool large_logo = true;
+int logo_offset = 0;
+
+void scrollLogo()
+{
+    ++logo_offset;
+    if (logo_offset >= ILI9225_LCD_HEIGHT)
+        logo_offset = 0;
+    if (large_logo)
+        drawLargeLogo(logo_offset);
+    else
+        drawSmallLogo(logo_offset);
+}
 
 void setup()
 {
@@ -44,8 +90,7 @@ void setup()
   tft.setFont(Terminal12x16);
   tft.clear();
   tft.setBackgroundColor(COLOR_BLACK);
-  tft.drawBitmap(0, 0, logo_large_a, 220, 62, COLOR_WHITE);
-  tft.drawBitmap(0, 66, logo_large_b, 220, 60, COLOR_RED);
+  drawLargeLogo(0);
   tft.drawText(30, 140, "Access Control", COLOR_GREEN);
   tft.setFont(Terminal6x8);
   tft.drawText(100, 158, version, COLOR_GREEN);
@@ -98,7 +143,8 @@ const int colours[] =
     COLOR_YELLOW
 };
 
-int count = 0;
+unsigned long status_millis = 0;
+unsigned long scroll_millis = 0;
 
 bool drawn_logo = false;
 
@@ -123,9 +169,10 @@ void loop()
                 if (!drawn_logo)
                 {
                     drawn_logo = true;
+                    large_logo = false;
                     tft.clear();
-                    tft.drawBitmap(0, 0, logo_small_a, 132, 36, COLOR_WHITE);
-                    tft.drawBitmap(220-86, 0, logo_small_b, 86, 36, COLOR_RED);
+                    drawSmallLogo(0);
+                    logo_offset = 0;
                 }
                 else
                     tft.fillRectangle(0, lcd_top, ILI9225_LCD_HEIGHT-1, ILI9225_LCD_WIDTH-1, COLOR_BLACK);
@@ -217,13 +264,17 @@ void loop()
         }
     }
 
-    ++count;
-    if (count > 10)
+    const auto now = millis();
+    if (now - status_millis > 50)
     {
-        count = 0;
+        status_millis = now;
         Serial.print("S ");
         Serial.print(!digitalRead(RED_SW_PIN));
         Serial.println(!digitalRead(GREEN_SW_PIN));
     }
-    
+    if (now - scroll_millis > 800)
+    {
+        scroll_millis = now;
+        scrollLogo();
+    }
 }
