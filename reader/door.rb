@@ -70,6 +70,11 @@ sp = SerialPort.new(port,
 line = sp.gets
 puts("Version: #{line}")
 
+# - handle reader
+# - handle keypad
+# - handle lock state
+# - update clock
+
 last_card = ''
 last_card_time = Time.now()
 while true
