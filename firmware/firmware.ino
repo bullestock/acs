@@ -61,19 +61,54 @@ void drawSmallLogo(int offset)
 #endif
 }
     
-bool large_logo = true;
-int logo_offset = 0;
-
-void scrollLogo()
+class Animater
 {
-    ++logo_offset;
-    if (logo_offset >= ILI9225_LCD_HEIGHT)
-        logo_offset = 0;
-    if (large_logo)
-        drawLargeLogo(logo_offset);
-    else
-        drawSmallLogo(logo_offset);
-}
+public:
+    void reset()
+    {
+        count = 0;
+        large_logo = false;
+        tft.clear();
+        drawSmallLogo(0);
+    }
+
+    void next()
+    {
+        ++mode;
+        count = 0;
+    }
+
+    void update()
+    {
+        const auto now = millis();
+        if (now - last_tick < 800)
+            return;
+        last_tick = now;
+        switch (mode)
+        {
+        case 0:
+            ++count;
+            if (count >= ILI9225_LCD_HEIGHT)
+                next();
+            if (large_logo)
+                drawLargeLogo(count);
+            else
+                drawSmallLogo(count);
+            break;
+        
+        default:
+            mode = 0;
+        }
+    }
+
+private:
+    int mode = 0;
+    bool large_logo = true;
+    int count = 0;
+    unsigned long last_tick = 0;
+};
+
+Animater anim;
 
 void setup()
 {
@@ -102,49 +137,48 @@ int buf_index = 0;
 
 const int colours[] =
 {
-    COLOR_WHITE,
-    COLOR_BLUE,
-    COLOR_GREEN,
-    COLOR_RED,
-    COLOR_NAVY,
-    COLOR_DARKBLUE,
-    COLOR_DARKGREEN,
-    COLOR_DARKCYAN,
-    COLOR_CYAN,
-    COLOR_TURQUOISE,
-    COLOR_INDIGO,
-    COLOR_DARKRED,
-    COLOR_OLIVE,
-    COLOR_GRAY,
-    COLOR_GREY,
-    COLOR_SKYBLUE,
-    COLOR_BLUEVIOLET,
-    COLOR_LIGHTGREEN,
-    COLOR_DARKVIOLET,
-    COLOR_YELLOWGREEN,
-    COLOR_BROWN,
-    COLOR_DARKGRAY,
-    COLOR_DARKGREY,
-    COLOR_SIENNA,
-    COLOR_LIGHTBLUE,
-    COLOR_GREENYELLOW,
-    COLOR_SILVER,
-    COLOR_LIGHTGRAY,
-    COLOR_LIGHTGREY,
-    COLOR_LIGHTCYAN,
-    COLOR_VIOLET,
-    COLOR_AZUR,
-    COLOR_BEIGE,
-    COLOR_MAGENTA,
-    COLOR_TOMATO,
-    COLOR_GOLD,
-    COLOR_ORANGE,
-    COLOR_SNOW,
-    COLOR_YELLOW
+    static_cast<int>(COLOR_WHITE),
+    static_cast<int>(COLOR_BLUE),
+    static_cast<int>(COLOR_GREEN),
+    static_cast<int>(COLOR_RED),
+    static_cast<int>(COLOR_NAVY),
+    static_cast<int>(COLOR_DARKBLUE),
+    static_cast<int>(COLOR_DARKGREEN),
+    static_cast<int>(COLOR_DARKCYAN),
+    static_cast<int>(COLOR_CYAN),
+    static_cast<int>(COLOR_TURQUOISE),
+    static_cast<int>(COLOR_INDIGO),
+    static_cast<int>(COLOR_DARKRED),
+    static_cast<int>(COLOR_OLIVE),
+    static_cast<int>(COLOR_GRAY),
+    static_cast<int>(COLOR_GREY),
+    static_cast<int>(COLOR_SKYBLUE),
+    static_cast<int>(COLOR_BLUEVIOLET),
+    static_cast<int>(COLOR_LIGHTGREEN),
+    static_cast<int>(COLOR_DARKVIOLET),
+    static_cast<int>(COLOR_YELLOWGREEN),
+    static_cast<int>(COLOR_BROWN),
+    static_cast<int>(COLOR_DARKGRAY),
+    static_cast<int>(COLOR_DARKGREY),
+    static_cast<int>(COLOR_SIENNA),
+    static_cast<int>(COLOR_LIGHTBLUE),
+    static_cast<int>(COLOR_GREENYELLOW),
+    static_cast<int>(COLOR_SILVER),
+    static_cast<int>(COLOR_LIGHTGRAY),
+    static_cast<int>(COLOR_LIGHTGREY),
+    static_cast<int>(COLOR_LIGHTCYAN),
+    static_cast<int>(COLOR_VIOLET),
+    static_cast<int>(COLOR_AZUR),
+    static_cast<int>(COLOR_BEIGE),
+    static_cast<int>(COLOR_MAGENTA),
+    static_cast<int>(COLOR_TOMATO),
+    static_cast<int>(COLOR_GOLD),
+    static_cast<int>(COLOR_ORANGE),
+    static_cast<int>(COLOR_SNOW),
+    static_cast<int>(COLOR_YELLOW)
 };
 
 unsigned long status_millis = 0;
-unsigned long scroll_millis = 0;
 
 bool drawn_logo = false;
 
@@ -169,10 +203,7 @@ void loop()
                 if (!drawn_logo)
                 {
                     drawn_logo = true;
-                    large_logo = false;
-                    tft.clear();
-                    drawSmallLogo(0);
-                    logo_offset = 0;
+                    anim.reset();
                 }
                 else
                     tft.fillRectangle(0, lcd_top, ILI9225_LCD_HEIGHT-1, ILI9225_LCD_WIDTH-1, COLOR_BLACK);
@@ -218,7 +249,7 @@ void loop()
                         break;
                     }
                     const int col = buf[2] - 'A';
-                    if ((col < 0) || (col > sizeof(colours)/sizeof(colours[0])))
+                    if ((col < 0) || (col > static_cast<int>(sizeof(colours)/sizeof(colours[0]))))
                     {
                         Serial.println("Bad colour");
                         break;
@@ -238,7 +269,7 @@ void loop()
                         break;
                     }
                     const int col = buf[2] - 'A';
-                    if ((col < 0) || (col > sizeof(colours)/sizeof(colours[0])))
+                    if ((col < 0) || (col > static_cast<int>(sizeof(colours)/sizeof(colours[0]))))
                     {
                         Serial.println("Bad colour");
                         break;
@@ -272,9 +303,5 @@ void loop()
         Serial.print(!digitalRead(RED_SW_PIN));
         Serial.println(!digitalRead(GREEN_SW_PIN));
     }
-    if (now - scroll_millis > 800)
-    {
-        scroll_millis = now;
-        scrollLogo();
-    }
+    anim.update();
 }
