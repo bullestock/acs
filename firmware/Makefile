@@ -4,3 +4,4 @@ ARDUINO_LIBS = SPI TFT_22_ILI9225
 ARDUINO_DIR = /usr/share/arduino
 USER_LIB_PATH = $(HOME)/Arduino/libraries
 include /usr/share/arduino/Arduino.mk
+CXXFLAGS_STD=-std=c++11
