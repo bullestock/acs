@@ -24,7 +24,7 @@ public:
     void next()
     {
         int old = mode;
-        mode = random(10);
+        mode = random(8);
         if (mode == old)
             ++mode;
         count = 0;
@@ -86,12 +86,8 @@ public:
         {
         case 0:
             // Scroll to the right
-            if (count == 0)
-            {
-                tft.fillRectangle(0, 0, ILI9225_LCD_HEIGHT-1, height, COLOR_BLACK);
-                ++count;
-                return;
-            }
+            if (count > 0)
+                tft.fillRectangle(count, 0, count, height-1, COLOR_BLACK);
             drawLogo(count, 0);
             ++count;
             if (count >= ILI9225_LCD_HEIGHT)
@@ -113,23 +109,24 @@ public:
             break;
 
         case 2:
+            // Erase every fourth line
+            if (count == 0)
             {
-                // Erase every fourth line
-                if (count == 0)
-                {
-                    tft.fillRectangle(0, 0, ILI9225_LCD_HEIGHT-1, height, COLOR_BLACK);
-                    drawLogo(0, 0);
-                    ++count;
-                    count2 = 0;
-                    return;
-                }
+                drawLogo(0, 0);
+                ++count;
+                count2 = -1;
+                return;
+            }
+            else
+            {
                 int h = ((height+3)/4)*4;
-                int row = (count % (h/4)) * 4 + count2;
-                if (row+6 >= h)
+                int row = (count % (h/4)) * 4;
+                if (row < 4)
                     ++count2;
+                row += count2;
                 tft.fillRectangle(0, row, ILI9225_LCD_HEIGHT-1, row, COLOR_BLACK);
                 ++count;
-                if (row >= h)
+                if (row+2 >= h)
                     next();
             }
             break;
@@ -138,7 +135,6 @@ public:
             // Erase lines from top
             if (count == 0)
             {
-                tft.fillRectangle(0, 0, ILI9225_LCD_HEIGHT-1, height, COLOR_BLACK);
                 drawLogo(0, 0);
                 ++count;
                 return;
@@ -150,10 +146,9 @@ public:
             break;
 
         case 4:
-            // Scroll up
+            // Scroll down
             if (count == 0)
             {
-                tft.fillRectangle(0, 0, ILI9225_LCD_HEIGHT-1, height, COLOR_BLACK);
                 drawLogo(0, 0);
                 ++count;
                 return;
@@ -165,7 +160,7 @@ public:
             break;
 
         case 5:
-            // Scroll down
+            // Scroll up
             if (count == 0)
             {
                 tft.fillRectangle(0, 0, ILI9225_LCD_HEIGHT-1, height, COLOR_BLACK);
@@ -180,21 +175,25 @@ public:
 
         case 6:
             // Erase from the outside
+            if (count == 0)
             {
-                if (count == 0)
-                {
-                    tft.fillRectangle(0, 0, ILI9225_LCD_HEIGHT-1, height, COLOR_BLACK);
-                    drawLogo(0, 0);
-                    ++count;
-                    return;
-                }
+                drawLogo(0, 0);
+                ++count;
+                return;
+            }
+            else
+            {
                 int n = count-1;
                 tft.fillRectangle(n, n, ILI9225_LCD_HEIGHT-1-n, n, COLOR_BLACK);
-                tft.fillRectangle(n, height-1-n, ILI9225_LCD_HEIGHT-1-n, height-1-n, COLOR_BLACK);
+                tft.fillRectangle(n, height-1-n,
+                                  ILI9225_LCD_HEIGHT-1-n, height-1-n,
+                                  COLOR_BLACK);
                 if (count <= height)
                 {
                     tft.fillRectangle(n, n, n, height-1-n, COLOR_BLACK);
-                    tft.fillRectangle(ILI9225_LCD_HEIGHT-1-n, n, ILI9225_LCD_HEIGHT-1-n, height-1-n, COLOR_BLACK);
+                    tft.fillRectangle(ILI9225_LCD_HEIGHT-1-n, n,
+                                      ILI9225_LCD_HEIGHT-1-n, height-1-n,
+                                      COLOR_BLACK);
                 }
                 ++count;
                 if (count >= height/2)
@@ -206,27 +205,25 @@ public:
             // Random dissolve
             if (count == 0)
             {
-                tft.fillRectangle(0, 0, ILI9225_LCD_HEIGHT-1, height, COLOR_BLACK);
                 drawLogo(0, 0);
                 ++count;
                 return;
             }
-            for (int i = 0; i < 8; ++i)
+            for (int i = 0; i < 6*(count/ILI9225_LCD_HEIGHT+1); ++i)
             {
                 int x = random(ILI9225_LCD_HEIGHT);
-                int y = random(height);
-                int dx = random(16);
+                int y = random(height-1);
+                int dx = 1+random(16);
                 if (x >= dx)
                     x -= dx;
-                tft.fillRectangle(x, y, x+dx, y, COLOR_BLACK);
+                tft.fillRectangle(x, y, x+dx, y+1, COLOR_BLACK);
             }
             ++count;
-            if (count > ILI9225_LCD_HEIGHT*16) // arbitrary
+            if (count > ILI9225_LCD_HEIGHT*2) // arbitrary factor
                 next();
             break;
             
         default:
-            Serial.print("MODE ZERO");
             mode = 0;
         }
     }
@@ -240,4 +237,3 @@ private:
     int count2 = 0;
     unsigned long last_tick = 0;
 };
-
