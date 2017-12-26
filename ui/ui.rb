@@ -2,16 +2,6 @@ require 'optparse'
 require 'serialport'
 require 'rest-client'
 
-OptionParser.new do |opts|
-  opts.banner = "Usage: door.rb [options] [port]"
-
-  opts.on("-v", "--verbose", "Verbose") do |n|
-    $verbose = true
-  end
-end.parse!
-
-api_key = File.read('apikey.txt')
-
 HOST = 'localhost'
 #HOST = 'https://panopticon.hal9k.dk'
 
@@ -62,6 +52,7 @@ end
 class Ui
   def initialize(port)
     @port = port
+    @locked = true
     @color_map = {
       'white' => 'A',
       'blue' => 'B',
@@ -110,22 +101,59 @@ class Ui
   end
 
   def write(large, line, text, col = 'white')
-    s = "#{large ? 'T' :'t'}#{line}#{@color_map[col]}#{text}"
+    s = "#{large ? 'T' :'t'}#{('0'.ord+line).chr()}#{@color_map[col]}#{text}"
+    puts("WRITE #{s}")
     @port.puts(s)
+  end
+
+  def set_lock_state(locked)
+    @locked = locked
+  end
+
+  def unlock()
+    puts "UNLOCKING"
+  end
+  
+  def wait_response(s)
+    begin
+      line = @port.gets
+    end while !line || line.empty?
+    line.strip!
+    #puts "Reply: #{line}"
+    if line != "OK"
+      puts "ERROR: Expected 'OK', got '#{line}' (in response to #{s})"
+      Process.exit()
+    end
+  end
+
+  def send_and_wait(s)
+    #puts("Sending #{s}")
+    @port.flush_input()
+    @port.puts(s)
+    wait_response(s)
+  end
+  
+  def update()
+    send_and_wait("L#{@locked ? '1' : '0'}")
+    write(true, 6, @locked ? '         Locked' : '         Open', @locked ? 'red' : 'green')
+    ct = DateTime.now.to_time.strftime("%H:%M")
+    write(false, 12, ct, 'blue')
   end
 end
 
 class CardReader
   def initialize(port)
     @port = port
+    @port.read_timeout = 10
     @last_card = ''
     @last_card_time = Time.now()
+    @api_key = File.read('apikey.txt')
   end
 
   def set_ui(ui)
     @ui = ui
   end
-  
+
   def update()
     line = @port.gets
     if !line || line.empty?
@@ -134,9 +162,9 @@ class CardReader
     line.strip!
     puts "CARD: #{line}"
     now = Time.now()
-    if (line != last_card) || (now - last_card_time > 5)
-      last_card = line
-      last_card_time = now
+    if (line != @last_card) || (now - @last_card_time > 5)
+      @last_card = line
+      @last_card_time = now
       # Let user know we are doing something
       @port.puts(WAIT)
       allowed = nil
@@ -144,7 +172,7 @@ class CardReader
         response = RestClient::Request.execute(method: :post,
                                                url: "#{HOST}/api/v1/permissions",
                                                timeout: 10,
-                                               payload: { api_token: api_key,
+                                               payload: { api_token: @api_key,
                                                           card_id: line
                                                         },
                                                headers: {
@@ -168,6 +196,7 @@ class CardReader
       if response
         if response == true
           @port.puts(ENTER)
+          @ui.unlock()
         elsif response == false
           @port.puts(NO_ENTRY)
         else
@@ -204,5 +233,7 @@ end
 reader = CardReader.new(ports['reader'])
 
 while true
+  ui.update()
   reader.update()
+  sleep 1
 end
