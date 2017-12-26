@@ -46,9 +46,6 @@ void setup()
   tft.setFont(Terminal12x16);
   tft.clear();
   tft.setBackgroundColor(COLOR_BLACK);
-  tft.drawText(30, 140, "Access Control", COLOR_GREEN);
-  tft.setFont(Terminal6x8);
-  tft.drawText(100, 158, version, COLOR_GREEN);
 
   randomSeed(analogRead(0));
 }
