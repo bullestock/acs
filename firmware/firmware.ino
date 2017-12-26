@@ -97,8 +97,6 @@ const int colours[] =
     static_cast<int>(COLOR_YELLOW)
 };
 
-unsigned long status_millis = 0;
-
 bool drawn_logo = false;
 
 void loop()
@@ -116,6 +114,7 @@ void loop()
                 // Control lock
                 // L<on>
                 digitalWrite(RELAY_PIN, buf[1] == '1');
+                Serial.println("OK");
                 break;
             case 'C':
                 // Clear screen
@@ -126,6 +125,7 @@ void loop()
                 }
                 else
                     tft.fillRectangle(0, lcd_top, ILI9225_LCD_HEIGHT-1, ILI9225_LCD_WIDTH-1, COLOR_BLACK);
+                Serial.println("OK");
                 break;
             case 'E':
                 {
@@ -140,6 +140,7 @@ void loop()
                     tft.fillRectangle(0, lcd_top+line*lcd_line_height_large,
                                       ILI9225_LCD_HEIGHT-1, lcd_top+(line+1)*lcd_line_height_large,
                                       COLOR_BLACK);
+                    Serial.println("OK");
                 }
                 break;
             case 'e':
@@ -155,6 +156,7 @@ void loop()
                     tft.fillRectangle(0, lcd_top+line*lcd_line_height_small,
                                       ILI9225_LCD_HEIGHT-1, lcd_top+(line+1)*lcd_line_height_small,
                                       COLOR_BLACK);
+                    Serial.println("OK");
                 }
                 break;
             case 'T':
@@ -175,6 +177,7 @@ void loop()
                     }
                     tft.setFont(Terminal12x16);
                     tft.drawText(0, lcd_top+line*lcd_line_height_large, String(buf+3), colours[col]);
+                    Serial.println("OK");
                 }
                 break;
             case 't':
@@ -195,10 +198,19 @@ void loop()
                     }
                     tft.setFont(Terminal6x8);
                     tft.drawText(0, lcd_top+line*lcd_line_height_small, String(buf+3), colours[col]);
+                    Serial.println("OK");
                 }
                 break;
+
+            case 'S':
+                Serial.print("S ");
+                Serial.print(!digitalRead(RED_SW_PIN));
+                Serial.println(!digitalRead(GREEN_SW_PIN));
+                break;
+                
             default:
                 Serial.println("Unknown command");
+                break;
             }
             buf_index = 0;
         }
@@ -212,15 +224,6 @@ void loop()
             }
             buf[buf_index++] = c;
         }
-    }
-
-    const auto now = millis();
-    if (now - status_millis > 50)
-    {
-        status_millis = now;
-        Serial.print("S ");
-        Serial.print(!digitalRead(RED_SW_PIN));
-        Serial.println(!digitalRead(GREEN_SW_PIN));
     }
     anim.update();
 }
