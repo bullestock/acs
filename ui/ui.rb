@@ -10,6 +10,9 @@ NO_ENTRY = 'P100R30SRN'
 WAIT = 'P10R0SGNN'
 WARN = 'P5R10SGX10NX100RX100N'
 
+UNLOCK_PERIOD_S = 60 # 15*60
+UNLOCK_WARN_S = 40 #10*60
+
 def find_ports()
   r = {}
   for p in 0..1
@@ -28,6 +31,7 @@ def find_ports()
               line = sp.gets
             end while !line || line.empty?
             puts "Got #{line}"
+            line.gsub!(/[^[:print:]]/i, '')
             line.strip!
             if line.include? "ACS"
               puts("Version: #{line}")
@@ -57,65 +61,66 @@ class Ui
     @port = port
     @lock_state = :locked
     @unlock_time = nil
-    @color_map = {
-      'white' => 'A',
-      'blue' => 'B',
-      'green' => 'C',
-      'red' => 'D',
-      'navy' => 'E',
-      'darkblue' => 'F',
-      'darkgreen' => 'G',
-      'darkcyan' => 'H',
-      'cyan' => 'I',
-      'turquoise' => 'J',
-      'indigo' => 'K',
-      'darkred' => 'L',
-      'olive' => 'M',
-      'gray' => 'N',
-      'grey' => 'O',
-      'skyblue' => 'P',
-      'blueviolet' => 'Q',
-      'lightgreen' => 'R',
-      'darkviolet' => 'S',
-      'yellowgreen' => 'T',
-      'brown' => 'U',
-      'darkgray' => 'V',
-      'darkgrey' => 'W',
-      'sienna' => 'X',
-      'lightblue' => 'Y',
-      'greenyellow' => 'Z',
-      'silver' => '[',
-      'lightgray' => '\\',
-      'lightgrey' => ']',
-      'lightcyan' => '^',
-      'violet' => '_',
-      'azur' => '`',
-      'beige' => 'a',
-      'magenta' => 'b',
-      'tomato' => 'c',
-      'gold' => 'd',
-      'orange' => 'e',
-      'snow' => 'f',
-      'yellow' => 'g'
-    }
+    @color_map = [
+      'white',
+      'blue',
+      'green',
+      'red',
+      'navy',
+      'darkblue',
+      'darkgreen',
+      'darkcyan',
+      'cyan',
+      'turquoise',
+      'indigo',
+      'darkred',
+      'olive',
+      'gray',
+      'grey',
+      'skyblue',
+      'blueviolet',
+      'lightgreen',
+      'darkviolet',
+      'yellowgreen',
+      'brown',
+      'darkgray',
+      'darkgrey',
+      'sienna',
+      'lightblue',
+      'greenyellow',
+      'silver',
+      'lightgray',
+      'lightgrey',
+      'lightcyan',
+      'violet',
+      'azure',
+      'beige',
+      'magenta',
+      'tomato',
+      'gold',
+      'orange',
+      'snow',
+      'yellow'
+    ]
     @last_time = ''
     @last_lock_state = ''
+    @green_pressed_at = nil
+    @unlocked_at = nil
+    @last_warning_at = nil
   end
 
   def clear()
-    @port.puts("C")
+    send_and_wait("C")
   end
 
   def clear_line(large, line)
-    line_ch = ('0'.ord+line).chr()
-    @port.puts("#{large ? 'E' :'e'}#{line_ch}")
+    send_and_wait(sprintf("#{large ? 'E' :'e'}%02d", line))
   end
 
   def write(large, line, text, col = 'white')
-    line_ch = ('0'.ord+line).chr()
-    s = "#{large ? 'T' :'t'}#{line_ch}#{@color_map[col]}#{text}"
-    #puts("WRITE #{s}")
-    @port.puts(s)
+    s = sprintf("#{large ? 'T' :'t'}%02d%02d%s", line, @color_map.find_index(col), text)
+    puts("WRITE #{s}")
+    send_and_wait(s)
   end
 
   def set_lock_state(locked)
@@ -133,8 +138,8 @@ class Ui
     end while !line || line.empty?
     line.strip!
     #puts "Reply: #{line}"
-    if line != "OK"
-      puts "ERROR: Expected 'OK', got '#{line}' (in response to #{s})"
+    if line != "OK #{s[0]}"
+      puts "ERROR: Expected 'OK #{s[0]}', got '#{line}' (in response to #{s})"
       Process.exit()
     end
   end
@@ -145,9 +150,24 @@ class Ui
     @port.puts(s)
     wait_response(s)
   end
+
+  def read_keys()
+    @port.flush_input()
+    @port.puts("S")
+    begin
+      line = @port.gets
+    end while !line || line.empty?
+    line.strip!
+    puts "Reply: #{line}"
+    if line[0] != "S"
+      puts "ERROR: Expected 'Sxx', got '#{line}'"
+      Process.exit()
+    end
+    return line[1] != '0', line[2] != '0'
+  end
   
   def update()
-    puts("Last #{@last_lock_state} current #{@lock_state}")
+    # Lock state
     if @last_lock_state != @lock_state
       clear_line(true, STATUS)
       @last_lock_state = @lock_state
@@ -157,7 +177,9 @@ class Ui
       write(true, STATUS, '         Locked', 'red')
     elsif @lock_state == :unlocked
       send_and_wait("L1")
-      write(true, STATUS, '         Open', 'green')
+      if !@last_warning_at
+        write(true, STATUS, '          Open', 'green')
+      end
     elsif @lock_state == :unlocking
       elapsed = Time.now - @unlock_time
       if elapsed > UNLOCK_TIME_SECS
@@ -173,9 +195,46 @@ class Ui
       puts("Fatal error: Unknown lock state")
       Process.exit
     end
+    # Buttons
+    red, green = read_keys()
+    if red
+      @lock_state = :locked
+    elsif green
+      if !@green_pressed_at
+        @green_pressed_at = Time.now
+      else
+        green_pressed_for = Time.now - @green_pressed_at
+        if green_pressed_for >= 1
+          @lock_state = :unlocked
+          @unlocked_at = Time.now
+        end
+      end
+    else
+      @green_pressed_at = nil
+    end
+    # Automatic locking
+    if @unlocked_at
+      unlocked_for = Time.now - @unlocked_at
+      if unlocked_for >= UNLOCK_PERIOD_S
+        @unlocked_at = nil
+        @lock_state = :locked
+      end
+      if unlocked_for >= UNLOCK_WARN_S
+        if !@last_warning_at
+          @last_warning_at = @unlocked_at
+        end
+        since_last_warning = Time.now - @last_warning_at
+        if since_last_warning > 60
+          clear_line(true, STATUS)
+          write(true, STATUS, "Locking in #{(UNLOCK_PERIOD_S - @unlocked_at)/60} minutes", 'orange')
+          @last_warning_at = Time.now
+        end
+      end
+    end
+    # Time display
     ct = DateTime.now.to_time.strftime("%H:%M")
     if ct != @last_time
-      clear_line(true, 12)
+      clear_line(false, 12)
       write(false, 12, ct, 'blue')
       @last_time = ct
     end
@@ -283,5 +342,5 @@ reader.set_ui(ui)
 while true
   ui.update()
   reader.update()
-  sleep 0.5
+  sleep 1
 end
