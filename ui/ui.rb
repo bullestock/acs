@@ -10,8 +10,8 @@ NO_ENTRY = 'P100R30SRN'
 WAIT = 'P10R0SGNN'
 WARN = 'P5R10SGX10NX100RX100N'
 
-UNLOCK_PERIOD_S = 60 # 15*60
-UNLOCK_WARN_S = 40 #10*60
+UNLOCK_PERIOD_S = 5*60 # 15*60
+UNLOCK_WARN_S = 3*60 #10*60
 
 def find_ports()
   r = {}
@@ -117,9 +117,9 @@ class Ui
     send_and_wait(sprintf("#{large ? 'E' :'e'}%02d", line))
   end
 
-  def write(large, line, text, col = 'white')
-    s = sprintf("#{large ? 'T' :'t'}%02d%02d%s", line, @color_map.find_index(col), text)
-    puts("WRITE #{s}")
+  def write(large, erase, line, text, col = 'white')
+    s = sprintf("#{large ? 'T' :'t'}%02d%02d%s%s",
+                line, @color_map.find_index(col), erase ? '1' : '0', text)
     send_and_wait(s)
   end
 
@@ -158,7 +158,7 @@ class Ui
       line = @port.gets
     end while !line || line.empty?
     line.strip!
-    puts "Reply: #{line}"
+    #puts "Reply: #{line}"
     if line[0] != "S"
       puts "ERROR: Expected 'Sxx', got '#{line}'"
       Process.exit()
@@ -168,17 +168,13 @@ class Ui
   
   def update()
     # Lock state
-    if @last_lock_state != @lock_state
-      clear_line(true, STATUS)
-      @last_lock_state = @lock_state
-    end
     if @lock_state == :locked
       send_and_wait("L0")
-      write(true, STATUS, '         Locked', 'red')
+      write(true, true, STATUS, '         Locked', 'red')
     elsif @lock_state == :unlocked
       send_and_wait("L1")
       if !@last_warning_at
-        write(true, STATUS, '          Open', 'green')
+        write(true, true, STATUS, '          Open', 'green')
       end
     elsif @lock_state == :unlocking
       elapsed = Time.now - @unlock_time
@@ -186,12 +182,12 @@ class Ui
         @lock_state = :locked
       else
         send_and_wait("L1")
-        write(true, STATUS, '         Enter   ', 'blue')
+        write(true, true, STATUS, '         Enter   ', 'blue')
       end
     else
       ui.clear();
-      ui.write(true, 2, '    FATAL ERROR:', 'red')
-      ui.write(true, 4, '  UNKNOWN LOCK STATE', 'red')
+      ui.write(true, false, 2, '    FATAL ERROR:', 'red')
+      ui.write(true, false, 4, '  UNKNOWN LOCK STATE', 'red')
       puts("Fatal error: Unknown lock state")
       Process.exit
     end
@@ -204,9 +200,10 @@ class Ui
         @green_pressed_at = Time.now
       else
         green_pressed_for = Time.now - @green_pressed_at
-        if green_pressed_for >= 1
+        if green_pressed_for >= 1 and !@unlocked_at
           @lock_state = :unlocked
           @unlocked_at = Time.now
+          puts("Unlocked at #{@unlocked_at}")
         end
       end
     else
@@ -218,15 +215,15 @@ class Ui
       if unlocked_for >= UNLOCK_PERIOD_S
         @unlocked_at = nil
         @lock_state = :locked
+        @last_warning_at = nil
       end
       if unlocked_for >= UNLOCK_WARN_S
         if !@last_warning_at
           @last_warning_at = @unlocked_at
         end
         since_last_warning = Time.now - @last_warning_at
-        if since_last_warning > 60
-          clear_line(true, STATUS)
-          write(true, STATUS, "Locking in #{(UNLOCK_PERIOD_S - @unlocked_at)/60} minutes", 'orange')
+        if since_last_warning > 20
+          write(true, true, STATUS, "Locking in #{((UNLOCK_PERIOD_S - unlocked_for)/60).to_i} minutes", 'orange')
           @last_warning_at = Time.now
         end
       end
@@ -234,8 +231,7 @@ class Ui
     # Time display
     ct = DateTime.now.to_time.strftime("%H:%M")
     if ct != @last_time
-      clear_line(false, 12)
-      write(false, 12, ct, 'blue')
+      write(false, true, 12, ct, 'blue')
       @last_time = ct
     end
   end
@@ -328,8 +324,8 @@ ui = Ui.new(ports['ui'])
 
 if !ports['reader']
   ui.clear();
-  ui.write(true, 2, '    FATAL ERROR:', 'red')
-  ui.write(true, 4, '  NO READER FOUND', 'red')
+  ui.write(true, false, 2, '    FATAL ERROR:', 'red')
+  ui.write(true, false, 4, '  NO READER FOUND', 'red')
   puts("Fatal error: No card reader found")
   Process.exit
 end
