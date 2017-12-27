@@ -102,6 +102,20 @@ bool drawn_logo = false;
 bool red_key_pressed = false;
 bool green_key_pressed = false;
 
+void erase_small(int line)
+{
+    tft.fillRectangle(0, lcd_top+line*lcd_line_height_small,
+                      ILI9225_LCD_HEIGHT-1, lcd_top+(line+1)*lcd_line_height_small,
+                      COLOR_BLACK);
+}
+
+void erase_large(int line)
+{
+    tft.fillRectangle(0, lcd_top+line*lcd_line_height_large,
+                      ILI9225_LCD_HEIGHT-1, lcd_top+(line+1)*lcd_line_height_large,
+                      COLOR_BLACK);
+}
+
 void loop()
 {
     if (!digitalRead(RED_SW_PIN))
@@ -147,9 +161,7 @@ void loop()
                         Serial.println(line);
                         break;
                     }
-                    tft.fillRectangle(0, lcd_top+line*lcd_line_height_large,
-                                      ILI9225_LCD_HEIGHT-1, lcd_top+(line+1)*lcd_line_height_large,
-                                      COLOR_BLACK);
+                    erase_large(line);
                     Serial.println("OK E");
                 }
                 break;
@@ -164,16 +176,14 @@ void loop()
                         Serial.println(line);
                         break;
                     }
-                    tft.fillRectangle(0, lcd_top+line*lcd_line_height_small,
-                                      ILI9225_LCD_HEIGHT-1, lcd_top+(line+1)*lcd_line_height_small,
-                                      COLOR_BLACK);
+                    erase_small(line);
                     Serial.println("OK e");
                 }
                 break;
             case 'T':
                 {
                     // Large text
-                    // T<line><colour><text>
+                    // T<line><colour><erase><text>
                     const int line = 10*(buf[1] - '0')+buf[2] - '0';
                     if ((line < 0) || (line > lcd_last_large_line))
                     {
@@ -187,14 +197,16 @@ void loop()
                         break;
                     }
                     tft.setFont(Terminal12x16);
-                    tft.drawText(0, lcd_top+line*lcd_line_height_large, String(buf+5), colours[col]);
+                    if (buf[5] != '0')
+                        erase_large(line);
+                    tft.drawText(0, lcd_top+line*lcd_line_height_large, String(buf+6), colours[col]);
                     Serial.println("OK T");
                 }
                 break;
             case 't':
                 {
                     // Small text
-                    // t<line><colour><text>
+                    // t<line><colour><erase><text>
                     const int line = 10*(buf[1] - '0')+buf[2] - '0';
                     if ((line < 0) || (line > lcd_last_small_line))
                     {
@@ -208,7 +220,9 @@ void loop()
                         break;
                     }
                     tft.setFont(Terminal6x8);
-                    tft.drawText(0, lcd_top+line*lcd_line_height_small, String(buf+5), colours[col]);
+                    if (buf[5] != '0')
+                        erase_small(line);
+                    tft.drawText(0, lcd_top+line*lcd_line_height_small, String(buf+6), colours[col]);
                     Serial.println("OK t");
                 }
                 break;
