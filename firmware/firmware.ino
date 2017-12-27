@@ -7,8 +7,8 @@
 
 const char* version = "0.0.2";
 
-const int GREEN_SW_PIN = 5;
-const int RED_SW_PIN = 6;
+const int RED_SW_PIN = 5;
+const int GREEN_SW_PIN = 6;
 
 const int RELAY_PIN = 12;
 
@@ -24,7 +24,7 @@ const int TFT_BRIGHTNESS = 200;
 TFT_22_ILI9225 tft = TFT_22_ILI9225(TFT_RST, TFT_RS, TFT_CS, TFT_LED, TFT_BRIGHTNESS);
 
 const int lcd_top = 38;
-const int lcd_line_height_large = 18;
+const int lcd_line_height_large = 17;
 const int lcd_line_height_small = 10;
 const int lcd_last_large_line = (ILI9225_LCD_WIDTH - lcd_top)/lcd_line_height_large - 1;
 const int lcd_last_small_line = (ILI9225_LCD_WIDTH - lcd_top)/lcd_line_height_small - 1;
@@ -99,8 +99,16 @@ const int colours[] =
 
 bool drawn_logo = false;
 
+bool red_key_pressed = false;
+bool green_key_pressed = false;
+
 void loop()
 {
+    if (!digitalRead(RED_SW_PIN))
+        red_key_pressed = true;
+    if (!digitalRead(GREEN_SW_PIN))
+        green_key_pressed = true;
+
     if (Serial.available())
     {
         // Command
@@ -108,13 +116,14 @@ void loop()
         if ((c == '\r') || (c == '\n'))
         {
             buf[buf_index+1] = 0;
+            buf_index = 0;
             switch (buf[0])
             {
             case 'L':
                 // Control lock
                 // L<on>
                 digitalWrite(RELAY_PIN, buf[1] == '1');
-                Serial.println("OK");
+                Serial.println("OK L");
                 break;
             case 'C':
                 // Clear screen
@@ -125,94 +134,97 @@ void loop()
                 }
                 else
                     tft.fillRectangle(0, lcd_top, ILI9225_LCD_HEIGHT-1, ILI9225_LCD_WIDTH-1, COLOR_BLACK);
-                Serial.println("OK");
+                Serial.println("OK C");
                 break;
             case 'E':
                 {
                     // Erase large line
                     // E<line>
-                    const int line = buf[1] - '0';
+                    const int line = 10*(buf[1] - '0')+buf[2] - '0';
                     if ((line < 0) || (line > lcd_last_large_line))
                     {
-                        Serial.println("Bad line number");
+                        Serial.print("Bad line number: ");
+                        Serial.println(line);
                         break;
                     }
                     tft.fillRectangle(0, lcd_top+line*lcd_line_height_large,
                                       ILI9225_LCD_HEIGHT-1, lcd_top+(line+1)*lcd_line_height_large,
                                       COLOR_BLACK);
-                    Serial.println("OK");
+                    Serial.println("OK E");
                 }
                 break;
             case 'e':
                 {
                     // Erase small line
                     // e<line>
-                    const int line = buf[1] - '0';
-                    if ((line < 0) || (line > lcd_last_large_line))
+                    const int line = 10*(buf[1] - '0')+buf[2] - '0';
+                    if ((line < 0) || (line > lcd_last_small_line))
                     {
-                        Serial.println("Bad line number");
+                        Serial.print("Bad line number: ");
+                        Serial.println(line);
                         break;
                     }
                     tft.fillRectangle(0, lcd_top+line*lcd_line_height_small,
                                       ILI9225_LCD_HEIGHT-1, lcd_top+(line+1)*lcd_line_height_small,
                                       COLOR_BLACK);
-                    Serial.println("OK");
+                    Serial.println("OK e");
                 }
                 break;
             case 'T':
                 {
                     // Large text
                     // T<line><colour><text>
-                    const int line = buf[1] - '0';
+                    const int line = 10*(buf[1] - '0')+buf[2] - '0';
                     if ((line < 0) || (line > lcd_last_large_line))
                     {
                         Serial.println("Bad line number");
                         break;
                     }
-                    const int col = buf[2] - 'A';
+                    const int col = 10*(buf[3] - '0')+buf[4] - '0';
                     if ((col < 0) || (col > static_cast<int>(sizeof(colours)/sizeof(colours[0]))))
                     {
                         Serial.println("Bad colour");
                         break;
                     }
                     tft.setFont(Terminal12x16);
-                    tft.drawText(0, lcd_top+line*lcd_line_height_large, String(buf+3), colours[col]);
-                    Serial.println("OK");
+                    tft.drawText(0, lcd_top+line*lcd_line_height_large, String(buf+5), colours[col]);
+                    Serial.println("OK T");
                 }
                 break;
             case 't':
                 {
                     // Small text
                     // t<line><colour><text>
-                    const int line = buf[1] - '0';
+                    const int line = 10*(buf[1] - '0')+buf[2] - '0';
                     if ((line < 0) || (line > lcd_last_small_line))
                     {
                         Serial.println("Bad line number");
                         break;
                     }
-                    const int col = buf[2] - 'A';
+                    const int col = 10*(buf[3] - '0')+buf[4] - '0';
                     if ((col < 0) || (col > static_cast<int>(sizeof(colours)/sizeof(colours[0]))))
                     {
                         Serial.println("Bad colour");
                         break;
                     }
                     tft.setFont(Terminal6x8);
-                    tft.drawText(0, lcd_top+line*lcd_line_height_small, String(buf+3), colours[col]);
-                    Serial.println("OK");
+                    tft.drawText(0, lcd_top+line*lcd_line_height_small, String(buf+5), colours[col]);
+                    Serial.println("OK t");
                 }
                 break;
 
             case 'S':
-                Serial.print("S ");
-                Serial.print(!digitalRead(RED_SW_PIN));
-                Serial.println(!digitalRead(GREEN_SW_PIN));
+                Serial.print("S");
+                Serial.print(red_key_pressed);
+                Serial.println(green_key_pressed);
+                red_key_pressed = green_key_pressed = false;
                 break;
                 
             default:
-                Serial.println("Unknown command");
+                Serial.print("Unknown command: ");
+                Serial.println(buf);
                 break;
             }
-            buf_index = 0;
         }
         else
         {
