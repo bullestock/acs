@@ -74,7 +74,7 @@ bool fill_seq(char* seq, int& index, int reps, Sequence elem)
 
 String current_card;
 
-void decode_line(const char* line)
+void decode_line(const char* line, bool send_reply = true)
 {
     int i = 0;
     switch (tolower(line[i]))
@@ -210,7 +210,8 @@ void decode_line(const char* line)
     for (int i = 0; i < seq_len; ++i)
         sequence[i] = seq[i];
     sequence_len = seq_len;
-    Serial.println("OK");
+    if (send_reply)
+        Serial.println("OK");
 }
 
 const int MAX_LINE_LENGTH = 80;
@@ -277,7 +278,7 @@ void loop()
                 digitalWrite(PIN_GREEN, false);
                 digitalWrite(PIN_RED, false);
                 sequence_len = 0;
-                decode_line("P5R0SGX199N");
+                decode_line("P5R0SGX199N", false);
                 return;
             }
             ++sequence_iteration;
