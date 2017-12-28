@@ -129,7 +129,7 @@ void loop()
         char c = Serial.read();
         if ((c == '\r') || (c == '\n'))
         {
-            buf[buf_index+1] = 0;
+            buf[buf_index] = 0;
             buf_index = 0;
             switch (buf[0])
             {
@@ -199,7 +199,8 @@ void loop()
                     tft.setFont(Terminal12x16);
                     if (buf[5] != '0')
                         erase_large(line);
-                    tft.drawText(0, lcd_top+line*lcd_line_height_large, String(buf+6), colours[col]);
+                    String s(buf+6);
+                    tft.drawText(0, lcd_top+line*lcd_line_height_large, s, colours[col]);
                     Serial.println("OK T");
                 }
                 break;
