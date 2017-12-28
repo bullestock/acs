@@ -5,10 +5,13 @@ require 'rest-client'
 HOST = 'http://localhost'
 #HOST = 'https://panopticon.hal9k.dk'
 
-ENTER = 'P250R12SGN'
-NO_ENTRY = 'P100R30SRN'
-WAIT = 'P10R0SGNN'
-WARN = 'P5R10SGX10NX100RX100N'
+LED_ENTER = 'P250R12SGN'
+LED_NO_ENTRY = 'P100R30SRN'
+LED_WAIT = 'P10R0SGNN'
+LED_ERROR = 'P5R10SGX10NX100RX100N'
+# Constant green
+LED_OPEN = 'P100R10SG'
+LED_CLOSING = 'P5R1SGX10NX100R'
 
 UNLOCK_PERIOD_S = 5*60 # 15*60
 UNLOCK_WARN_S = 3*60 #10*60
@@ -54,8 +57,10 @@ def find_ports()
 end
 
 class Ui
-  STATUS = 6 # Display line for lock status
-  UNLOCK_TIME_SECS = 3 # How long to keep the door open after valid card is presented
+   # Display lines for lock status
+  STATUS_1 = 2
+  STATUS_2 = 4
+  ENTER_TIME_SECS = 3 # How long to keep the door open after valid card is presented
   
   def initialize(port)
     @port = port
@@ -103,12 +108,17 @@ class Ui
       'yellow'
     ]
     @last_time = ''
-    @last_lock_state = ''
     @green_pressed_at = nil
     @unlocked_at = nil
-    @last_warning_at = nil
+    @last_status_1 = nil
+    @last_status_2 = nil
+    @reader = nil
   end
 
+  def set_reader(reader)
+    @reader = reader
+  end
+  
   def clear()
     send_and_wait("C")
   end
@@ -168,21 +178,48 @@ class Ui
   
   def update()
     # Lock state
-    if @lock_state == :locked
-      send_and_wait("L0")
-      write(true, true, STATUS, '         Locked', 'red')
-    elsif @lock_state == :unlocked
-      send_and_wait("L1")
-      if !@last_warning_at
-        write(true, true, STATUS, '          Open', 'green')
-      end
-    elsif @lock_state == :unlocking
+    col = 'green'
+    s1 = ''
+    s2 = ''
+    if @lock_state == :unlocking
       elapsed = Time.now - @unlock_time
-      if elapsed > UNLOCK_TIME_SECS
+      if elapsed > ENTER_TIME_SECS
         @lock_state = :locked
       else
         send_and_wait("L1")
-        write(true, true, STATUS, '         Enter   ', 'blue')
+        col = 'blue'
+        s1 = '         Enter'
+      end
+    end
+    
+    if @lock_state == :unlocking
+      # nop
+    elsif @lock_state == :locked
+      send_and_wait("L0")
+      col = 'orange'
+      s1 = '         Locked'
+    elsif @lock_state == :unlocked
+      send_and_wait("L1")
+      col = 'green'
+      s1 = '          Open'
+      @reader.advertise_open()
+    elsif @lock_state == :timed_unlock
+      send_and_wait("L1")
+      col = 'green'
+      s1 = '        Open for'
+      locking_at = @unlocked_at + UNLOCK_PERIOD_S
+      secs_left = (locking_at - Time.now).to_i
+      mins_left = (secs_left/60).ceil
+      if mins_left > 0
+        s2 = "      #{mins_left} minutes"
+      else
+        s2 = "      #{secs_left} seconds"
+      end
+      if secs_left <= UNLOCK_WARN_S
+        col = 'orange'
+        @reader.warn_closing()
+      else
+        @reader.advertise_open()
       end
     else
       ui.clear();
@@ -191,17 +228,26 @@ class Ui
       puts("Fatal error: Unknown lock state")
       Process.exit
     end
+    if s1 != @last_status_1
+      write(true, true, STATUS_1, s1, col)
+      @last_status_1 = s1
+    end
+    if s2 != @last_status_2
+      write(true, true, STATUS_2, s2, col)
+      @last_status_2 = s2
+    end
     # Buttons
     red, green = read_keys()
     if red
       @lock_state = :locked
+      @unlocked_at = nil
     elsif green
       if !@green_pressed_at
         @green_pressed_at = Time.now
       else
         green_pressed_for = Time.now - @green_pressed_at
         if green_pressed_for >= 1 and !@unlocked_at
-          @lock_state = :unlocked
+          @lock_state = :timed_unlock
           @unlocked_at = Time.now
           puts("Unlocked at #{@unlocked_at}")
         end
@@ -215,22 +261,12 @@ class Ui
       if unlocked_for >= UNLOCK_PERIOD_S
         @unlocked_at = nil
         @lock_state = :locked
-        @last_warning_at = nil
-      end
-      if unlocked_for >= UNLOCK_WARN_S
-        if !@last_warning_at
-          @last_warning_at = @unlocked_at
-        end
-        since_last_warning = Time.now - @last_warning_at
-        if since_last_warning > 20
-          write(true, true, STATUS, "Locking in #{((UNLOCK_PERIOD_S - unlocked_for)/60).to_i} minutes", 'orange')
-          @last_warning_at = Time.now
-        end
       end
     end
     # Time display
     ct = DateTime.now.to_time.strftime("%H:%M")
     if ct != @last_time
+      puts("Time #{ct}")
       write(false, true, 12, ct, 'blue')
       @last_time = ct
     end
@@ -250,6 +286,14 @@ class CardReader
     @ui = ui
   end
 
+  def warn_closing()
+    @port.puts(LED_CLOSING)
+  end
+  
+  def advertise_open()
+    @port.puts(LED_OPEN)
+  end
+  
   def update()
     line = @port.gets
     if !line || line.empty?
@@ -266,7 +310,7 @@ class CardReader
       @last_card = line
       @last_card_time = now
       # Let user know we are doing something
-      @port.puts(WAIT)
+      @port.puts(LED_WAIT)
       rest_start = Time.now
       allowed = nil
       begin
@@ -290,22 +334,22 @@ class CardReader
             user_id = j["id"]
           rescue JSON::ParserError => e
             puts("Bad JSON received: #{response.body}")
-            @port.puts(WARN)
+            @port.puts(LED_ERROR)
           end
         end
       rescue Exception => e  
         puts "#{e.class} Failed to connect to server"
-        @port.puts(WARN)
+        @port.puts(LED_ERROR)
       end
       if allowed
         if allowed == true
-          @port.puts(ENTER)
+          @port.puts(LED_ENTER)
           @ui.unlock()
         elsif allowed == false
-          @port.puts(NO_ENTRY)
+          @port.puts(LED_NO_ENTRY)
         else
           puts("Impossible! allowed is neither true nor false: #{allowed}")
-          @port.puts(WARN)
+          @port.puts(LED_ERROR)
         end
       end
       # TODO: Add log entry
@@ -321,9 +365,9 @@ if !ports['ui']
 end
 
 ui = Ui.new(ports['ui'])
+ui.clear();
 
 if !ports['reader']
-  ui.clear();
   ui.write(true, false, 2, '    FATAL ERROR:', 'red')
   ui.write(true, false, 4, '  NO READER FOUND', 'red')
   puts("Fatal error: No card reader found")
@@ -334,6 +378,7 @@ end
 
 reader = CardReader.new(ports['reader'])
 reader.set_ui(ui)
+ui.set_reader(reader)
 
 while true
   ui.update()
