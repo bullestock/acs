@@ -72,43 +72,64 @@ bool fill_seq(char* seq, int& index, int reps, Sequence elem)
     return true;
 }
 
+String current_card;
+
 void decode_line(const char* line)
 {
     int i = 0;
-    if (tolower(line[i]) != 'p')
+    switch (tolower(line[i]))
     {
-        Serial.println("Line must begin with P");
+    case 'c':
+        // Read card ID
+        Serial.print("ID");
+        Serial.println(current_card);
+        current_card = "";
+        return;
+
+    case 'p':
+        break;
+
+    default:
+        Serial.print("Line must begin with P: ");
+        Serial.println(line);
         return;
     }
     ++i;
     int period = 0;
     if (!parse_int(line, i, period))
     {
-        Serial.println("Period must follow P");
+        Serial.print("Period must follow P: ");
+        Serial.println(line);
         return;
     }
     if (period <= 0)
     {
-        Serial.println("Period cannot be zero");
+        Serial.print("Period cannot be zero: ");
+        Serial.println(line);
         return;
     }
     if (tolower(line[i]) != 'r')
     {
         Serial.print("Period must be followed by R, got ");
-        Serial.println(line[i]);
+        Serial.print(line[i]);
+        Serial.print(": ");
+        Serial.println(line);
         return;
     }
     ++i;
     int repeats = 0;
     if (!parse_int(line, i, repeats))
     {
-        Serial.println("Repeats must follow R");
+        Serial.print("Repeats must follow R: ");
+        Serial.println(line);
         return;
     }
     if (tolower(line[i]) != 's')
     {
         Serial.print("Repeats must be followed by S, got ");
-        Serial.println(line[i]);
+        Serial.print(line[i]);
+        Serial.print(": ");
+        Serial.println(line);
         return;
     }
     ++i;
@@ -118,7 +139,8 @@ void decode_line(const char* line)
     {
         if (seq_len == MAX_SEQ_SIZE)
         {
-            Serial.println("Sequence too long");
+            Serial.print("Sequence too long: ");
+            Serial.println(line);
             return;
         }
         switch (tolower(line[i]))
@@ -141,7 +163,8 @@ void decode_line(const char* line)
                 ++i;
                 if (!parse_int(line, i, reps))
                 {
-                    Serial.println("X must be followed by repeats");
+                    Serial.print("X must be followed by repeats");
+                    Serial.println(line);
                     return;
                 }
                 switch (tolower(line[i]))
@@ -164,14 +187,18 @@ void decode_line(const char* line)
                     break;
                 default:
                     Serial.print("Unexpected character after X: ");
-                    Serial.println(line[i]);
+                    Serial.print(line[i]);
+                    Serial.print(": ");
+                    Serial.println(line);
                     return;
                 }
             }
             break;
         default:
             Serial.print("Unexpected sequence character: ");
-            Serial.println(line[i]);
+            Serial.print(line[i]);
+            Serial.print(": ");
+            Serial.println(line);
             return;
         }
         ++i;
@@ -183,6 +210,7 @@ void decode_line(const char* line)
     for (int i = 0; i < seq_len; ++i)
         sequence[i] = seq[i];
     sequence_len = seq_len;
+    Serial.println("OK");
 }
 
 const int MAX_LINE_LENGTH = 80;
@@ -200,7 +228,7 @@ void loop()
     if (c > 0)
         if (decoder.add_byte(c))
         {
-            Serial.println(decoder.get_id());
+            current_card = decoder.get_id();
             card_flash_active = true;
             card_flash_start = millis();
         }
@@ -232,7 +260,8 @@ void loop()
             line[line_len++] = c;
         else
         {
-            Serial.println("Line too long");
+            Serial.print("Line too long: ");
+            Serial.println(line);
             line_len = 0;
         }
     }
