@@ -6,7 +6,7 @@ require 'rest-client'
 HOST = 'http://localhost'
 #HOST = 'https://panopticon.hal9k.dk'
 
-LED_ENTER = 'P250R12SGN'
+LED_ENTER = 'P250R8SGN'
 LED_NO_ENTRY = 'P100R30SRN'
 LED_WAIT = 'P10R0SGNN'
 LED_ERROR = 'P5R10SGX10NX100RX100N'
@@ -79,7 +79,7 @@ class Ui
   # Display lines for lock status
   STATUS_1 = 2
   STATUS_2 = 4
-  ENTER_TIME_SECS = 3 # How long to keep the door open after valid card is presented
+  ENTER_TIME_SECS = 5 # How long to keep the door open after valid card is presented
   
   def initialize(port)
     @port = port
@@ -164,6 +164,12 @@ class Ui
     @who = who
     @lock_state = :unlocking
     @unlock_time = Time.now
+  end
+
+  def set_temp_status(s1, s2 = '')
+    @temp_status_1 = s1
+    @temp_status_2 = s2
+    @temp_status_at = Time.now
   end
   
   def wait_response(s)
@@ -273,6 +279,9 @@ class Ui
     # Buttons
     red, green = read_keys()
     if red
+      if @lock_state != :locked
+        @reader.add_log(nil, 'Door locked')
+      end
       @lock_state = :locked
       @unlocked_at = nil
     elsif green && @lock_state != :unlocked
@@ -286,6 +295,7 @@ class Ui
         if green_pressed_for >= THURSDAY_KEY_TIME
           if is_it_thursday?
             @lock_state = :unlocked
+            @reader.add_log(nil, 'Door unlocked')
           else
             @temp_status_1 = '        It is not'
             @temp_status_2 = '     Thursday yet'
@@ -294,6 +304,7 @@ class Ui
         elsif green_pressed_for >= UNLOCK_KEY_TIME && !@unlocked_at
           @lock_state = :timed_unlock
           @unlocked_at = Time.now
+          @reader.add_log(nil, "Door unlocked for #{UNLOCK_PERIOD_S} s")
           puts("Unlocked at #{@unlocked_at}")
         end
       end
@@ -378,7 +389,7 @@ class CardReader
                                                       }.to_json(),
                                              headers: {
                                                'Content-Type': 'application/json',
-                                                       'Accept': 'application/json'
+                                               'Accept': 'application/json'
                                              })
       puts("Got server reply in #{Time.now - rest_start} s")
       if response.body
@@ -387,16 +398,46 @@ class CardReader
           allowed = j['allowed']
           user_id = j["id"]
           who = j["name"]
+          puts("User: #{user_id} #{who}")
         rescue JSON::ParserError => e
           puts("Bad JSON received: #{response.body}")
           error = true
         end
       end
+    rescue RestClient::ResourceNotFound => e
+      puts("Unknown card")
+      return false, false, '', nil
     rescue Exception => e  
       puts "#{e.class} Failed to connect to server"
       error = true
     end
-    return allowed, error, who
+    return allowed, error, who, user_id
+  end
+  
+  def add_log(id, msg)
+    rest_start = Time.now
+    error = false
+    begin
+      url = "#{HOST}/api/v1/logs"
+      response = RestClient::Request.execute(method: :post,
+                                             url: url,
+                                             timeout: 60,
+                                             payload: { api_token: @api_key,
+                                                        log: {
+                                                          user_id: id,
+                                                          message: msg
+                                                        }
+                                                      }.to_json(),
+                                             headers: {
+                                               'Content-Type': 'application/json',
+                                               'Accept': 'application/json'
+                                             })
+      puts("Got server reply in #{Time.now - rest_start} s")
+    rescue Exception => e  
+      puts "#{e.class} Failed to connect to server"
+      error = true
+    end
+    return !error
   end
   
   def update()
@@ -428,21 +469,27 @@ class CardReader
       @last_card_seen_at = now
       # Let user know we are doing something
       send(LED_WAIT)
-      allowed, error, who = check_permission(@last_card)
+      allowed, error, who, user_id = check_permission(@last_card)
       if error
         send(LED_ERROR)
-      elsif allowed
+      else
         if allowed == true
           send(LED_ENTER)
           @ui.unlock(who)
+          add_log(user_id, 'Granted entry')
         elsif allowed == false
           send(LED_NO_ENTRY)
+          if user_id
+            add_log(user_id, 'Denied entry')
+          else
+            add_log(user_id, "Denied entry for #{@last_card}")
+            @ui.set_temp_status('     Unknown card')
+          end
         else
           puts("Impossible! allowed is neither true nor false: #{allowed}")
           send(LED_ERROR)
         end
       end
-      # TODO: Add log entry
     end
   end
 
