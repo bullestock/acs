@@ -366,7 +366,6 @@ class CardReader
     who = ''
     begin
       url = "#{HOST}/api/v1/permissions"
-      puts("URL #{url}")
       response = RestClient::Request.execute(method: :post,
                                              url: url,
                                              timeout: 60,
@@ -461,11 +460,12 @@ if !ports['reader']
   Process.exit
 end
 
-# - handle keypad
-
 reader = CardReader.new(ports['reader'])
 reader.set_ui(ui)
 ui.set_reader(reader)
+
+# Prime Rails server
+reader.check_permission('')
 
 puts("----\nReady")
 
