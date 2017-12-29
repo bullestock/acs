@@ -67,11 +67,11 @@ def find_ports()
 end
 
 def is_it_thursday?
-  return true#false
+  return (Date.today.strftime("%A") == 'Thursday') && (Time.now.hour >= 16);
 end
 
 class Ui
-   # Display lines for lock status
+  # Display lines for lock status
   STATUS_1 = 2
   STATUS_2 = 4
   ENTER_TIME_SECS = 3 # How long to keep the door open after valid card is presented
@@ -267,7 +267,7 @@ class Ui
     if red
       @lock_state = :locked
       @unlocked_at = nil
-    elsif green and @lock_state != :unlocked
+    elsif green && @lock_state != :unlocked
       if !@green_pressed_at
         @green_pressed_at = Time.now
       end
@@ -283,7 +283,7 @@ class Ui
             @temp_status_2 = '     Thursday yet'
             @temp_status_at = Time.now
           end
-        elsif green_pressed_for >= UNLOCK_KEY_TIME and !@unlocked_at
+        elsif green_pressed_for >= UNLOCK_KEY_TIME && !@unlocked_at
           @lock_state = :timed_unlock
           @unlocked_at = Time.now
           puts("Unlocked at #{@unlocked_at}")
@@ -374,7 +374,7 @@ class CardReader
       return
     end
     line = line[2..-1]
-    if !line.empty? and line.length != 10
+    if !line.empty? && line.length != 10
       puts "Invalid card ID: #{line}"
       line = ''
     end
