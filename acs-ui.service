@@ -1,0 +1,12 @@
+[Unit]
+Description=ACS UI Service
+
+[Service]
+WorkingDirectory=/home/hal9k/acs/ui
+ExecStart=/home/hal9k/acs/ui/ui.rb
+StandardOutput=null
+User=hal9k
+
+[Install]
+WantedBy=multi-user.target
+Alias=acs-ui.service

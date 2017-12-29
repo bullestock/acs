@@ -1,3 +1,4 @@
+#!/usr/bin/ruby
 require 'optparse'
 require 'serialport'
 require 'rest-client'
@@ -455,6 +456,7 @@ end
 
 ui = Ui.new(ports['ui'])
 ui.clear();
+ui.write(true, true, 3, "     Initializing")
 
 if !ports['reader']
   ui.write(true, false, 2, '    FATAL ERROR:', 'red')
@@ -471,6 +473,7 @@ ui.set_reader(reader)
 reader.check_permission('')
 
 puts("----\nReady")
+ui.clear();
 
 while true
   ui.update()
