@@ -13,8 +13,15 @@ LED_ERROR = 'P5R10SGX10NX100RX100N'
 LED_OPEN = 'P200R10SG'
 LED_CLOSING = 'P5R5SGX10NX100R'
 
-UNLOCK_PERIOD_S = 5*60 # 15*60
-UNLOCK_WARN_S = 3*60 #10*60
+# How many seconds green key must be held down to activate timed unlock
+UNLOCK_KEY_TIME = 0.25
+# How many seconds green key must be held down to activate Thursday mode
+THURSDAY_KEY_TIME = 2
+
+TEMP_STATUS_SHOWN_FOR = 5
+
+UNLOCK_PERIOD_S = 15*60
+UNLOCK_WARN_S = 5*60
 
 def find_ports()
   r = {}
@@ -57,6 +64,10 @@ def find_ports()
     end
   end
   return r
+end
+
+def is_it_thursday?
+  return true#false
 end
 
 class Ui
@@ -117,6 +128,9 @@ class Ui
     @last_status_1 = nil
     @last_status_2 = nil
     @reader = nil
+    @temp_status_1 = ''
+    @temp_status_2 = ''
+    @temp_status_at = nil
   end
 
   def set_reader(reader)
@@ -135,10 +149,6 @@ class Ui
     s = sprintf("#{large ? 'T' :'t'}%02d%02d%s%s",
                 line, @color_map.find_index(col), erase ? '1' : '0', text)
     send_and_wait(s)
-  end
-
-  def set_lock_state(locked)
-    @lock_state = locked ? :locked : :unlocked
   end
 
   def unlock()
@@ -235,6 +245,15 @@ class Ui
       puts("Fatal error: Unknown lock state")
       Process.exit
     end
+    if !@temp_status_1.empty?
+      shown_for = Time.now - @temp_status_at
+      if shown_for > TEMP_STATUS_SHOWN_FOR
+        @temp_status_1 = ''
+      else
+        s1 = @temp_status_1
+        s2 = @temp_status_2
+      end
+    end
     if s1 != @last_status_1
       write(true, true, STATUS_1, s1, col)
       @last_status_1 = s1
@@ -248,18 +267,28 @@ class Ui
     if red
       @lock_state = :locked
       @unlocked_at = nil
-    elsif green
+    elsif green and @lock_state != :unlocked
       if !@green_pressed_at
         @green_pressed_at = Time.now
-      else
+      end
+    else
+      if @green_pressed_at
+        # Release
         green_pressed_for = Time.now - @green_pressed_at
-        if green_pressed_for >= 0.25 and !@unlocked_at
+        if green_pressed_for >= THURSDAY_KEY_TIME
+          if is_it_thursday?
+            @lock_state = :unlocked
+          else
+            @temp_status_1 = '        It is not'
+            @temp_status_2 = '     Thursday yet'
+            @temp_status_at = Time.now
+          end
+        elsif green_pressed_for >= UNLOCK_KEY_TIME and !@unlocked_at
           @lock_state = :timed_unlock
           @unlocked_at = Time.now
           puts("Unlocked at #{@unlocked_at}")
         end
       end
-    else
       @green_pressed_at = nil
     end
     # Automatic locking
