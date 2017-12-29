@@ -131,6 +131,7 @@ class Ui
     @temp_status_1 = ''
     @temp_status_2 = ''
     @temp_status_at = nil
+    @who = nil
   end
 
   def set_reader(reader)
@@ -151,10 +152,11 @@ class Ui
     send_and_wait(s)
   end
 
-  def unlock()
+  def unlock(who)
     if @lock_state == :timed_unlock
       return
     end
+    @who = who
     @lock_state = :unlocking
     @unlock_time = Time.now
   end
@@ -206,6 +208,7 @@ class Ui
         send_and_wait("L1")
         col = 'blue'
         s1 = '         Enter'
+        s2 = @who
       end
     end
     
@@ -355,6 +358,43 @@ class CardReader
     @last_led_write_at = Time.now
     send(LED_OPEN)
   end
+
+  def check_permission(id)
+    rest_start = Time.now
+    allowed = nil
+    error = false
+    who = ''
+    begin
+      url = "#{HOST}/api/v1/permissions"
+      puts("URL #{url}")
+      response = RestClient::Request.execute(method: :post,
+                                             url: url,
+                                             timeout: 60,
+                                             payload: { api_token: @api_key,
+                                                        card_id: id
+                                                      }.to_json(),
+                                             headers: {
+                                               'Content-Type': 'application/json',
+                                                       'Accept': 'application/json'
+                                             })
+      puts("Got server reply in #{Time.now - rest_start} s")
+      if response.body
+        begin
+          j = JSON.parse(response.body)
+          allowed = j['allowed']
+          user_id = j["id"]
+          who = j["name"]
+        rescue JSON::ParserError => e
+          puts("Bad JSON received: #{response.body}")
+          error = true
+        end
+      end
+    rescue Exception => e  
+      puts "#{e.class} Failed to connect to server"
+      error = true
+    end
+    return allowed, error, who
+  end
   
   def update()
     if Time.now - @last_card_read_at < 1
@@ -385,40 +425,13 @@ class CardReader
       @last_card_seen_at = now
       # Let user know we are doing something
       send(LED_WAIT)
-      rest_start = Time.now
-      allowed = nil
-      begin
-        url = "#{HOST}/api/v1/permissions"
-        puts("URL #{url}")
-        response = RestClient::Request.execute(method: :post,
-                                               url: url,
-                                               timeout: 60,
-                                               payload: { api_token: @api_key,
-                                                          card_id: line
-                                                        }.to_json(),
-                                               headers: {
-                                                 'Content-Type': 'application/json',
-                                                 'Accept': 'application/json'
-                                               })
-        puts("Got server reply in #{Time.now - rest_start} s")
-        if response.body
-          begin
-            j = JSON.parse(response.body)
-            allowed = j['allowed']
-            user_id = j["id"]
-          rescue JSON::ParserError => e
-            puts("Bad JSON received: #{response.body}")
-            send(LED_ERROR)
-          end
-        end
-      rescue Exception => e  
-        puts "#{e.class} Failed to connect to server"
+      allowed, error, who = check_permission(@last_card)
+      if error
         send(LED_ERROR)
-      end
-      if allowed
+      elsif allowed
         if allowed == true
           send(LED_ENTER)
-          @ui.unlock()
+          @ui.unlock(who)
         elsif allowed == false
           send(LED_NO_ENTRY)
         else
