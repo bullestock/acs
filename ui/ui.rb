@@ -33,19 +33,18 @@ def find_ports()
             begin
               line = sp.gets
             end while !line || line.empty?
-            puts "Got #{line}"
-            line.gsub!(/[^[:print:]]/i, '')
             line.strip!
-            puts "-> #{line}"
-            if line.empty?
+            reply = line.gsub(/[^[:print:]]/i, '')
+            puts "Got #{line} -> #{reply}"
+            if reply.empty?
               break
             end
-            if line.include? "ACS"
-              puts("Version: #{line}")
-              if line.include? "UI"
+            if reply.include? "ACS"
+              puts("Version: #{reply}")
+              if reply.include? "UI"
                 r['ui'] = sp
                 break
-              elsif line.include? "cardreader"
+              elsif reply.include? "cardreader"
                 r['reader'] = sp
                 break
               end
@@ -254,7 +253,7 @@ class Ui
         @green_pressed_at = Time.now
       else
         green_pressed_for = Time.now - @green_pressed_at
-        if green_pressed_for >= 0.5 and !@unlocked_at
+        if green_pressed_for >= 0.25 and !@unlocked_at
           @lock_state = :timed_unlock
           @unlocked_at = Time.now
           puts("Unlocked at #{@unlocked_at}")
@@ -431,5 +430,4 @@ puts("----\nReady")
 while true
   ui.update()
   reader.update()
-  sleep 0.1
 end
