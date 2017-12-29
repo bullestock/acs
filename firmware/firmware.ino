@@ -5,7 +5,7 @@
 
 #include "animater.h"
 
-const char* version = "0.0.2";
+const char* version = "0.0.3";
 
 const int RED_SW_PIN = 5;
 const int GREEN_SW_PIN = 6;
@@ -39,8 +39,6 @@ void setup()
   tft.begin();
 
   Serial.begin(115200);
-  Serial.print("ACS UI v ");
-  Serial.println(version);
 
   tft.setOrientation(1);
   tft.setFont(Terminal12x16);
@@ -133,6 +131,12 @@ void loop()
             buf_index = 0;
             switch (buf[0])
             {
+            case 'V':
+                // Version
+                Serial.print("ACS UI v ");
+                Serial.println(version);
+                break;
+
             case 'L':
                 // Control lock
                 // L<on>

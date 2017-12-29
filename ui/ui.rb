@@ -35,8 +35,12 @@ def find_ports()
                           })
       if sp
         puts "Found #{port}"
+        sp.read_timeout = 10
         begin
           while true
+            sleep 5
+            sp.puts("V")
+            sleep 1
             begin
               line = sp.gets
             end while !line || line.empty?
@@ -315,7 +319,6 @@ class CardReader
   def initialize(port)
     @port = port
     @port.flush_input
-    @port.read_timeout = 10
     @last_card = ''
     @last_card_read_at = Time.now()
     @last_card_seen_at = Time.now()

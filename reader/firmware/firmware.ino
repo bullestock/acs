@@ -15,7 +15,6 @@ SoftwareSerial swSerial(PIN_RX, PIN_TX);
 void setup()
 {
     Serial.begin(115200);
-    Serial.println("ACS cardreader v 0.5");
     swSerial.begin(9600);
 
     pinMode(PIN_GREEN, OUTPUT);
@@ -79,6 +78,11 @@ void decode_line(const char* line, bool send_reply = true)
     int i = 0;
     switch (tolower(line[i]))
     {
+    case 'v':
+        // Show version
+        Serial.println("ACS cardreader v 0.6");
+        return;
+
     case 'c':
         // Read card ID
         Serial.print("ID");
