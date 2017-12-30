@@ -440,6 +440,29 @@ class CardReader
     return !error
   end
   
+  def add_unknown_card(id)
+    rest_start = Time.now
+    error = false
+    begin
+      url = "#{HOST}/api/v1/unknown_cards"
+      response = RestClient::Request.execute(method: :post,
+                                             url: url,
+                                             timeout: 60,
+                                             payload: { api_token: @api_key,
+                                                        card_id: id
+                                                      }.to_json(),
+                                             headers: {
+                                               'Content-Type': 'application/json',
+                                               'Accept': 'application/json'
+                                             })
+      puts("Got server reply in #{Time.now - rest_start} s")
+    rescue Exception => e  
+      puts "#{e.class} Failed to connect to server"
+      error = true
+    end
+    return !error
+  end
+  
   def update()
     if Time.now - @last_card_read_at < 1
       return
@@ -483,7 +506,8 @@ class CardReader
             add_log(user_id, 'Denied entry')
           else
             add_log(user_id, "Denied entry for #{@last_card}")
-            @ui.set_temp_status('     Unknown card')
+            add_unknown_card(@last_card)
+            @ui.set_temp_status('     Unknown card', "    #{@last_card}")
           end
         else
           puts("Impossible! allowed is neither true nor false: #{allowed}")
