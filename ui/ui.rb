@@ -244,9 +244,9 @@ class Ui
       secs_left = (locking_at - Time.now).to_i
       mins_left = (secs_left/60.0).ceil
       if mins_left > 1
-        s2 = "#{mins_left} minutes")
+        s2 = "#{mins_left} minutes"
       else
-        s2 = "#{secs_left} seconds")
+        s2 = "#{secs_left} seconds"
       end
       if secs_left <= UNLOCK_WARN_S
         col = 'orange'
@@ -266,9 +266,9 @@ class Ui
       if shown_for > TEMP_STATUS_SHOWN_FOR
         @temp_status_1 = ''
       else
-        s1 = @temp_status_1)
-        s2 = @temp_status_2)
-        col = @temp_status_col
+        s1 = @temp_status_1
+        s2 = @temp_status_2
+        col = @temp_status_colour
       end
     end
     if s1 != @last_status_1
@@ -533,8 +533,8 @@ ui = Ui.new(ports['ui'])
 ui.clear();
 
 if !ports['reader']
-  ui.write(true, false, 2, 'FATAL ERROR:'), 'red')
-  ui.write(true, false, 4, 'NO READER FOUND'), 'red')
+  ui.write(true, false, 2, 'FATAL ERROR:', 'red')
+  ui.write(true, false, 4, 'NO READER FOUND', 'red')
   puts("Fatal error: No card reader found")
   Process.exit
 end
