@@ -80,7 +80,7 @@ class Ui
   STATUS_1 = 2
   STATUS_2 = 4
   ENTER_TIME_SECS = 5 # How long to keep the door open after valid card is presented
-  
+
   def initialize(port)
     @port = port
     @port.flush_input
@@ -135,6 +135,7 @@ class Ui
     @reader = nil
     @temp_status_1 = ''
     @temp_status_2 = ''
+    @temp_status_colour = ''
     @temp_status_at = nil
     @who = nil
   end
@@ -166,9 +167,10 @@ class Ui
     @unlock_time = Time.now
   end
 
-  def set_temp_status(s1, s2 = '')
+  def set_temp_status(s1, s2 = '', colour = '')
     @temp_status_1 = s1
     @temp_status_2 = s2
+    @temp_status_colour = colour
     @temp_status_at = Time.now
   end
   
@@ -218,7 +220,7 @@ class Ui
       else
         send_and_wait("L1")
         col = 'blue'
-        s1 = '         Enter'
+        s1 = 'Enter'
         s2 = @who
       end
     end
@@ -228,23 +230,23 @@ class Ui
     elsif @lock_state == :locked
       send_and_wait("L0")
       col = 'orange'
-      s1 = '         Locked'
+      s1 = 'Locked'
     elsif @lock_state == :unlocked
       send_and_wait("L1")
       col = 'green'
-      s1 = '          Open'
+      s1 = 'Open'
       @reader.advertise_open()
     elsif @lock_state == :timed_unlock
       send_and_wait("L1")
       col = 'green'
-      s1 = '        Open for'
+      s1 = 'Open for'
       locking_at = @unlocked_at + UNLOCK_PERIOD_S
       secs_left = (locking_at - Time.now).to_i
       mins_left = (secs_left/60.0).ceil
       if mins_left > 1
-        s2 = "       #{mins_left} minutes"
+        s2 = "#{mins_left} minutes")
       else
-        s2 = "      #{secs_left} seconds"
+        s2 = "#{secs_left} seconds")
       end
       if secs_left <= UNLOCK_WARN_S
         col = 'orange'
@@ -254,8 +256,8 @@ class Ui
       end
     else
       ui.clear();
-      ui.write(true, false, 2, '    FATAL ERROR:', 'red')
-      ui.write(true, false, 4, '  UNKNOWN LOCK STATE', 'red')
+      ui.write(true, false, 2, 'FATAL ERROR:', 'red')
+      ui.write(true, false, 4, 'UNKNOWN LOCK STATE', 'red')
       puts("Fatal error: Unknown lock state")
       Process.exit
     end
@@ -264,8 +266,9 @@ class Ui
       if shown_for > TEMP_STATUS_SHOWN_FOR
         @temp_status_1 = ''
       else
-        s1 = @temp_status_1
-        s2 = @temp_status_2
+        s1 = @temp_status_1)
+        s2 = @temp_status_2)
+        col = @temp_status_col
       end
     end
     if s1 != @last_status_1
@@ -297,8 +300,8 @@ class Ui
             @lock_state = :unlocked
             @reader.add_log(nil, 'Door unlocked')
           else
-            @temp_status_1 = '        It is not'
-            @temp_status_2 = '     Thursday yet'
+            @temp_status_1 = 'It is not'
+            @temp_status_2 = 'Thursday yet'
             @temp_status_at = Time.now
           end
         elsif green_pressed_for >= UNLOCK_KEY_TIME && !@unlocked_at
@@ -504,10 +507,11 @@ class CardReader
           send(LED_NO_ENTRY)
           if user_id
             add_log(user_id, 'Denied entry')
+            @ui.set_temp_status('Denied entry:', who, 'red')
           else
             add_log(user_id, "Denied entry for #{@last_card}")
             add_unknown_card(@last_card)
-            @ui.set_temp_status('     Unknown card', "    #{@last_card}")
+            @ui.set_temp_status('Unknown card', @last_card, 'yellow')
           end
         else
           puts("Impossible! allowed is neither true nor false: #{allowed}")
@@ -527,11 +531,10 @@ end
 
 ui = Ui.new(ports['ui'])
 ui.clear();
-ui.write(true, true, 3, "     Initializing")
 
 if !ports['reader']
-  ui.write(true, false, 2, '    FATAL ERROR:', 'red')
-  ui.write(true, false, 4, '  NO READER FOUND', 'red')
+  ui.write(true, false, 2, 'FATAL ERROR:'), 'red')
+  ui.write(true, false, 4, 'NO READER FOUND'), 'red')
   puts("Fatal error: No card reader found")
   Process.exit
 end
