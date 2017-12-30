@@ -5,7 +5,7 @@
 
 #include "animater.h"
 
-const char* version = "0.0.3";
+const char* version = "0.0.4";
 
 const int RED_SW_PIN = 5;
 const int GREEN_SW_PIN = 6;
@@ -204,7 +204,8 @@ void loop()
                     if (buf[5] != '0')
                         erase_large(line);
                     String s(buf+6);
-                    tft.drawText(0, lcd_top+line*lcd_line_height_large, s, colours[col]);
+                    const auto w = tft.getTextWidth(s);
+                    tft.drawText((tft.maxX() - w)/2, lcd_top+line*lcd_line_height_large, s, colours[col]);
                     Serial.println("OK T");
                 }
                 break;
@@ -227,7 +228,9 @@ void loop()
                     tft.setFont(Terminal6x8);
                     if (buf[5] != '0')
                         erase_small(line);
-                    tft.drawText(0, lcd_top+line*lcd_line_height_small, String(buf+6), colours[col]);
+                    String s(buf+6);
+                    const auto w = tft.getTextWidth(s);
+                    tft.drawText((tft.maxX() - w)/2, lcd_top+line*lcd_line_height_small, s, colours[col]);
                     Serial.println("OK t");
                 }
                 break;
