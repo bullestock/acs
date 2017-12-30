@@ -18,6 +18,7 @@ Rails.application.routes.draw do
   resources :users
   resources :machines
   resources :logs
+  resources :unknown_cards
 
   scope '/api' do
     scope '/v1' do
@@ -27,6 +28,9 @@ Rails.application.routes.draw do
       scope '/permissions' do
         get '/' => 'api_permissions#show'
         post '/' => 'api_permissions#show'
+      end
+      scope '/unknown_cards' do
+        post '/' => 'api_unknown_cards#create'
       end
     end
   end

@@ -1,0 +1,13 @@
+- unless smart_listing.empty?
+  %table.table.table-striped
+    %thead
+      %th.col-md-1= smart_listing.sortable "Timestamp", :stamp
+      %th.col-md-1= smart_listing.sortable "Card ID", :card_id
+    %tbody
+      - smart_listing.collection.each do |e|
+        %tr
+        %td.text-right= e.stamp.in_time_zone(Rails.configuration.display_time_zone).strftime('%Y %m %d %H:%M:%S')
+        %td= e.card_id
+  = smart_listing.paginate
+- else
+  %p.warning No records
