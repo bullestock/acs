@@ -40,6 +40,11 @@ class UsersController < ApplicationController
     @user = User.find(params[:id])
 
     if @user.update(user_params)
+      # Remove card ID from unknown_cards
+      uc = UnknownCard.find_by_card_id(@user.card_id)
+      if uc
+        uc.destroy
+      end
       flash[:success] = "User updated"
       render 'edit'
     end
@@ -47,6 +52,6 @@ class UsersController < ApplicationController
 
   private
   def user_params
-    params.require(:user).permit(:name, :login, :password, :password_confirmation, permission_ids:[], machine_ids:[])
+    params.require(:user).permit(:name, :login, :card_id, :password, :password_confirmation, permission_ids:[], machine_ids:[])
   end
 end

@@ -32,6 +32,14 @@
             - m = f.machines.map(&:name).sort.join(", ")
             = m.empty? ? '(None)' : m
       %tr
+        %td= f.label "Card"
+        %td
+          - card_ids = []
+          - if @user.card_id && !@user.card_id.empty?
+            - card_ids.push @user.card_id
+          - card_ids.concat UnknownCard.all.collect { |u| [ u.card_id ] }
+          = f.select :card_id, card_ids, { include_blank: 'None' }
+      %tr
         %td= '&nbsp;'.html_safe
         %td= ''
       - if can_u_login
