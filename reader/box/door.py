@@ -22,6 +22,8 @@ coil_sup_w = 43
 coil_sup_h = 31
 # Width of screw block
 sw = 12
+# Thickness of front plate
+front_th = 1
 
 def coil_sup():
     return cylinder(coil_sup_d/2, coil_sup_l)
@@ -34,25 +36,30 @@ def coil_sups():
     return s1+s2+s3+s4
 
 def bottom():
-    return translate([-case_w/2, -case_h/2, 0])(cube([case_w, case_h, case_th]))
+    # Actually, this is the front
+    return color(Red)(translate([-case_w/2, -case_h/2, 0])(cube([case_w, case_h, front_th])))
 
 def frame():
-    outer = translate([-case_w/2, -case_h/2, case_th])(cube([case_w, case_h, case_d]))
+    outer = translate([-case_w/2, -case_h/2, front_th])(cube([case_w, case_h, case_d]))
     iw = case_w-2*case_th
     ih = case_h-2*case_th
-    inner = translate([-iw/2, -ih/2, case_th])(cube([iw, ih, case_d+1]))
+    inner = translate([-iw/2, -ih/2, front_th])(cube([iw, ih, case_d+5]))
     return outer-inner
 
 def led_support():
-    return cylinder(h=4, d=5)
+    return cylinder(h=4, d=8)
 
 def led_hole():
-    return down(1)(cylinder(h=10, d=2.5))
+    return down(1)(cylinder(h=10, d=3.5))
 
-def screw_block():
-    block = translate([-sw/2, -case_h/2, 0])(cube([sw, case_h, case_d+case_th]))
-    hole = cylinder(h=case_h+2, r=1.5) + down(0.1)(cylinder(h=4, r1=3, r2=1.5))
-    return block - hole
+def screw_block(left):
+    block = cube([sw, case_h, case_d+front_th])
+    offset = case_th/2
+    if not left:
+        offset = -offset
+    hole = translate([sw/2+offset, case_h/2, 0])(cylinder(h=case_h+2, r=2) +
+                                            down(0.1)(cylinder(h=4, r1=4.5, r2=2)))
+    return color(Green)(translate([-sw/2, -case_h/2, 0])(block - hole))
 
 def assembly():
     bt = bottom()
@@ -63,8 +70,8 @@ def assembly():
     lh1 = left(led_dist/2)(led_hole())
     l2 = right(led_dist/2)(led_support())
     lh2 = right(led_dist/2)(led_hole())
-    s1 = left(case_w/2+sw/2-0.1)(screw_block())
-    s2 = right(case_w/2+sw/2-0.1)(screw_block())
+    s1 = left(case_w/2+sw/2-0.1)(screw_block(True))
+    s2 = right(case_w/2+sw/2-0.1)(screw_block(False))
     return cs+fr+bt+l1+l2+s1+s2-lh1-lh2
 
 if __name__ == '__main__':
