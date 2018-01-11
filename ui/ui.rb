@@ -3,8 +3,8 @@ require 'optparse'
 require 'serialport'
 require 'rest-client'
 
-HOST = 'http://localhost'
-#HOST = 'https://panopticon.hal9k.dk'
+#HOST = 'http://localhost'
+HOST = 'https://panopticon.hal9k.dk'
 
 LED_ENTER = 'P250R8SGN'
 LED_NO_ENTRY = 'P100R30SRN'
@@ -393,7 +393,8 @@ class CardReader
                                              headers: {
                                                'Content-Type': 'application/json',
                                                'Accept': 'application/json'
-                                             })
+                                             },
+					     :verify_ssl => false)
       puts("Got server reply in #{Time.now - rest_start} s")
       if response.body
         begin
@@ -434,7 +435,8 @@ class CardReader
                                              headers: {
                                                'Content-Type': 'application/json',
                                                'Accept': 'application/json'
-                                             })
+                                             },
+					     :verify_ssl => false)
       puts("Got server reply in #{Time.now - rest_start} s")
     rescue Exception => e  
       puts "#{e.class} Failed to connect to server"
@@ -457,7 +459,8 @@ class CardReader
                                              headers: {
                                                'Content-Type': 'application/json',
                                                'Accept': 'application/json'
-                                             })
+                                             },
+					     :verify_ssl => false)
       puts("Got server reply in #{Time.now - rest_start} s")
     rescue Exception => e  
       puts "#{e.class} Failed to connect to server"
