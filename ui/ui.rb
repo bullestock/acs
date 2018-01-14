@@ -268,7 +268,9 @@ class Ui
       else
         s1 = @temp_status_1
         s2 = @temp_status_2
-        col = @temp_status_colour
+	if @temp_status_colour && @temp_status_colour != ''
+          col = @temp_status_colour
+        end
       end
     end
     if s1 != @last_status_1
