@@ -6,7 +6,7 @@ class FlSyncJob < ActiveJob::Base
   queue_as :default
 
   def self.perform(*args)
-    puts "Synch: #{args}"
+    puts "#{Time.now.strftime("%d/%m/%Y %H:%M")} Synch: #{args}"
     secret = YAML.load_file('secret.yml')
     creds = secret['credentials']
     user = creds[0]
@@ -29,6 +29,7 @@ class FlSyncJob < ActiveJob::Base
       name = "#{first_name} #{last_name}"
       activities = m["Activities"].to_i
       if !activity_ids.include?(activities)
+        puts "Member #{name} (ID #{id}) has no activities"
         excluded_members << name
         next
       end
@@ -56,10 +57,12 @@ class FlSyncJob < ActiveJob::Base
     }
     # Deactivate remaining members
     User.all.each { |u|
-      if !active_members.include? u.member_id
-        puts "Member #{u.name} (ID #{u.member_id}) is no longer active"
-        u.active = false
-        u.save
+      if u.member_id
+        if !active_members.include? u.member_id
+          puts "Member #{u.name} (ID #{u.member_id}) is no longer active"
+          u.active = false
+          u.save
+        end
       end
     }
     # Output statistics
