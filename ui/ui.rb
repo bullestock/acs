@@ -3,7 +3,6 @@ require 'optparse'
 require 'serialport'
 require 'rest-client'
 
-#HOST = 'http://localhost'
 HOST = 'https://panopticon.hal9k.dk'
 
 LED_ENTER = 'P250R8SGN'
@@ -15,7 +14,7 @@ LED_OPEN = 'P200R10SG'
 LED_CLOSING = 'P5R5SGX10NX100R'
 
 # How many seconds green key must be held down to activate timed unlock
-UNLOCK_KEY_TIME = 0.25
+UNLOCK_KEY_TIME = 0.1
 # How many seconds green key must be held down to activate Thursday mode
 THURSDAY_KEY_TIME = 2
 
@@ -23,6 +22,37 @@ TEMP_STATUS_SHOWN_FOR = 5
 
 UNLOCK_PERIOD_S = 15*60
 UNLOCK_WARN_S = 5*60
+
+$q = Queue.new
+$api_key = File.read('apikey.txt').strip()
+
+log_thread = Thread.new do
+  puts "Thread start"
+  while true
+    e = $q.pop
+    rest_start = Time.now
+    begin
+      url = "#{HOST}/api/v1/logs"
+      response = RestClient::Request.execute(method: :post,
+                                             url: url,
+                                             timeout: 60,
+                                             payload: { api_token: $api_key,
+                                                        log: {
+                                                          user_id: e["id"],
+                                                          message: e["msg"]
+                                                        }
+                                                      }.to_json(),
+                                             headers: {
+                                               'Content-Type': 'application/json',
+                                               'Accept': 'application/json'
+                                             },
+					     :verify_ssl => false)
+      puts("log_thread: Got server reply in #{Time.now - rest_start} s")
+    rescue Exception => e  
+      puts "log_thread: #{e.class} Failed to connect to server"
+    end
+  end
+end
 
 def find_ports()
   r = {}
@@ -339,7 +369,6 @@ class CardReader
     @last_card = ''
     @last_card_read_at = Time.now()
     @last_card_seen_at = Time.now()
-    @api_key = File.read('apikey.txt').strip()
     @last_led_write_at = Time.now()
   end
 
@@ -389,7 +418,7 @@ class CardReader
       response = RestClient::Request.execute(method: :post,
                                              url: url,
                                              timeout: 60,
-                                             payload: { api_token: @api_key,
+                                             payload: { api_token: $api_key,
                                                         card_id: id
                                                       }.to_json(),
                                              headers: {
@@ -421,30 +450,7 @@ class CardReader
   end
   
   def add_log(id, msg)
-    rest_start = Time.now
-    error = false
-    begin
-      url = "#{HOST}/api/v1/logs"
-      response = RestClient::Request.execute(method: :post,
-                                             url: url,
-                                             timeout: 60,
-                                             payload: { api_token: @api_key,
-                                                        log: {
-                                                          user_id: id,
-                                                          message: msg
-                                                        }
-                                                      }.to_json(),
-                                             headers: {
-                                               'Content-Type': 'application/json',
-                                               'Accept': 'application/json'
-                                             },
-					     :verify_ssl => false)
-      puts("Got server reply in #{Time.now - rest_start} s")
-    rescue Exception => e  
-      puts "#{e.class} Failed to connect to server"
-      error = true
-    end
-    return !error
+    $q << { 'id' => id, 'msg' => msg }
   end
   
   def add_unknown_card(id)
@@ -455,7 +461,7 @@ class CardReader
       response = RestClient::Request.execute(method: :post,
                                              url: url,
                                              timeout: 60,
-                                             payload: { api_token: @api_key,
+                                             payload: { api_token: $api_key,
                                                         card_id: id
                                                       }.to_json(),
                                              headers: {
