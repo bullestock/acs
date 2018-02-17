@@ -3,12 +3,10 @@
 #include <RDM6300.h>
 #include <SoftwareSerial.h>
 
-// TX is not connected
-const int PIN_RX = 3;
-const int PIN_TX = A5;
-const int PIN_GREEN = 2;
-const int PIN_RED = 4;
-const int PIN_LED = 13;
+const int PIN_RX = 2;
+const int PIN_TX = A5; // Not connected
+const int PIN_GREEN = 3; // Needs PWM support
+const int PIN_RED = 5; // Needs PWM support
 
 SoftwareSerial swSerial(PIN_RX, PIN_TX);
 
@@ -310,5 +308,4 @@ void loop()
             break;
         }
     }
-    digitalWrite(PIN_LED, (sequence_index % 2) == 0);
 }
