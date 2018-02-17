@@ -107,6 +107,7 @@ void decode_line(const char* line, bool send_reply = true)
                 return;
             }
             pwm_max = inten;
+            Serial.println("OK");
         }
         return;
         
