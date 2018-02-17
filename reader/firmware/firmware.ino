@@ -37,6 +37,7 @@ int sequence_period = 1;
 int delay_counter = 0;
 int sequence_repeats = 1; // to force idle sequence on startup
 int sequence_iteration = 0;
+int pwm_max = 255;
 
 bool parse_int(const char* line, int& index, int& value)
 {
@@ -78,7 +79,7 @@ void decode_line(const char* line, bool send_reply = true)
     {
     case 'v':
         // Show version
-        Serial.println("ACS cardreader v 0.6");
+        Serial.println("ACS cardreader v 0.7");
         return;
 
     case 'c':
@@ -88,6 +89,27 @@ void decode_line(const char* line, bool send_reply = true)
         current_card = "";
         return;
 
+    case 'i':
+        // Set intensity
+        {
+            int inten = 0;
+            ++i;
+            if (!parse_int(line, i, inten))
+            {
+                Serial.print("Value must follow I: ");
+                Serial.println(line);
+                return;
+            }
+            if ((inten < 1) || (inten > 255))
+            {
+                Serial.print("Intensity must be between 1 and 255: ");
+                Serial.println(line);
+                return;
+            }
+            pwm_max = inten;
+        }
+        return;
+        
     case 'p':
         break;
 
@@ -238,8 +260,8 @@ void loop()
 
     if (card_flash_active)
     {
-        digitalWrite(PIN_GREEN, true);
-        digitalWrite(PIN_RED, true);
+        analogWrite(PIN_GREEN, pwm_max);
+        analogWrite(PIN_RED, pwm_max);
         delay(10);
         if (millis() - card_flash_start > 1000)
             card_flash_active = false;
@@ -277,8 +299,8 @@ void loop()
             if (sequence_iteration >= sequence_repeats)
             {
                 // Done
-                digitalWrite(PIN_GREEN, false);
-                digitalWrite(PIN_RED, false);
+                analogWrite(PIN_GREEN, 0);
+                analogWrite(PIN_RED, 0);
                 sequence_len = 0;
                 decode_line("P5R0SGX199N", false);
                 return;
@@ -291,20 +313,20 @@ void loop()
         switch ((Sequence) sequence[sequence_index++])
         {
         case Sequence::Red:
-            digitalWrite(PIN_GREEN, false);
-            digitalWrite(PIN_RED, true);
+            analogWrite(PIN_GREEN, 0);
+            analogWrite(PIN_RED, pwm_max);
             break;
         case Sequence::Green:
-            digitalWrite(PIN_GREEN, true);
-            digitalWrite(PIN_RED, false);
+            analogWrite(PIN_GREEN, pwm_max);
+            analogWrite(PIN_RED, 0);
             break;
         case Sequence::Both:
-            digitalWrite(PIN_GREEN, true);
-            digitalWrite(PIN_RED, true);
+            analogWrite(PIN_GREEN, pwm_max);
+            analogWrite(PIN_RED, pwm_max);
             break;
         case Sequence::None:
-            digitalWrite(PIN_GREEN, false);
-            digitalWrite(PIN_RED, false);
+            analogWrite(PIN_GREEN, 0);
+            analogWrite(PIN_RED, 0);
             break;
         }
     }
