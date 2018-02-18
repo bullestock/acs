@@ -245,6 +245,7 @@ int line_len = 0;
 
 unsigned long card_flash_start = 0;
 bool card_flash_active = false;
+bool card_flash_state = false;
 
 void loop()
 {
@@ -255,17 +256,25 @@ void loop()
         if (decoder.add_byte(c))
         {
             current_card = decoder.get_id();
-            card_flash_active = true;
-            card_flash_start = millis();
+            if (!card_flash_active)
+            {
+                card_flash_active = true;
+                const auto now = millis();
+                card_flash_start = now;
+            }
         }
 
     if (card_flash_active)
     {
-        analogWrite(PIN_GREEN, pwm_max);
-        analogWrite(PIN_RED, pwm_max);
-        delay(10);
-        if (millis() - card_flash_start > 1000)
+        analogWrite(PIN_RED, card_flash_state ? 0 : pwm_max);
+        analogWrite(PIN_GREEN, card_flash_state ? pwm_max : 0);
+        card_flash_state = !card_flash_state;
+        delay(100);
+        const auto now = millis();
+        if (now - card_flash_start > 500)
+        {
             card_flash_active = false;
+        }
         return;
     }
 
