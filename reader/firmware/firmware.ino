@@ -3,12 +3,10 @@
 #include <RDM6300.h>
 #include <SoftwareSerial.h>
 
-// TX is not connected
-const int PIN_RX = 3;
-const int PIN_TX = A5;
-const int PIN_GREEN = 2;
-const int PIN_RED = 4;
-const int PIN_LED = 13;
+const int PIN_RX = 2;
+const int PIN_TX = A5; // Not connected
+const int PIN_GREEN = 3; // Needs PWM support
+const int PIN_RED = 5; // Needs PWM support
 
 SoftwareSerial swSerial(PIN_RX, PIN_TX);
 
@@ -39,6 +37,7 @@ int sequence_period = 1;
 int delay_counter = 0;
 int sequence_repeats = 1; // to force idle sequence on startup
 int sequence_iteration = 0;
+int pwm_max = 255;
 
 bool parse_int(const char* line, int& index, int& value)
 {
@@ -80,7 +79,7 @@ void decode_line(const char* line, bool send_reply = true)
     {
     case 'v':
         // Show version
-        Serial.println("ACS cardreader v 0.6");
+        Serial.println("ACS cardreader v 0.7");
         return;
 
     case 'c':
@@ -90,6 +89,28 @@ void decode_line(const char* line, bool send_reply = true)
         current_card = "";
         return;
 
+    case 'i':
+        // Set intensity
+        {
+            int inten = 0;
+            ++i;
+            if (!parse_int(line, i, inten))
+            {
+                Serial.print("Value must follow I: ");
+                Serial.println(line);
+                return;
+            }
+            if ((inten < 1) || (inten > 255))
+            {
+                Serial.print("Intensity must be between 1 and 255: ");
+                Serial.println(line);
+                return;
+            }
+            pwm_max = inten;
+            Serial.println("OK");
+        }
+        return;
+        
     case 'p':
         break;
 
@@ -224,6 +245,7 @@ int line_len = 0;
 
 unsigned long card_flash_start = 0;
 bool card_flash_active = false;
+bool card_flash_state = false;
 
 void loop()
 {
@@ -234,17 +256,25 @@ void loop()
         if (decoder.add_byte(c))
         {
             current_card = decoder.get_id();
-            card_flash_active = true;
-            card_flash_start = millis();
+            if (!card_flash_active)
+            {
+                card_flash_active = true;
+                const auto now = millis();
+                card_flash_start = now;
+            }
         }
 
     if (card_flash_active)
     {
-        digitalWrite(PIN_GREEN, true);
-        digitalWrite(PIN_RED, true);
-        delay(10);
-        if (millis() - card_flash_start > 1000)
+        analogWrite(PIN_RED, card_flash_state ? 0 : pwm_max);
+        analogWrite(PIN_GREEN, card_flash_state ? pwm_max : 0);
+        card_flash_state = !card_flash_state;
+        delay(100);
+        const auto now = millis();
+        if (now - card_flash_start > 500)
+        {
             card_flash_active = false;
+        }
         return;
     }
 
@@ -279,8 +309,8 @@ void loop()
             if (sequence_iteration >= sequence_repeats)
             {
                 // Done
-                digitalWrite(PIN_GREEN, false);
-                digitalWrite(PIN_RED, false);
+                analogWrite(PIN_GREEN, 0);
+                analogWrite(PIN_RED, 0);
                 sequence_len = 0;
                 decode_line("P5R0SGX199N", false);
                 return;
@@ -293,22 +323,21 @@ void loop()
         switch ((Sequence) sequence[sequence_index++])
         {
         case Sequence::Red:
-            digitalWrite(PIN_GREEN, false);
-            digitalWrite(PIN_RED, true);
+            analogWrite(PIN_GREEN, 0);
+            analogWrite(PIN_RED, pwm_max);
             break;
         case Sequence::Green:
-            digitalWrite(PIN_GREEN, true);
-            digitalWrite(PIN_RED, false);
+            analogWrite(PIN_GREEN, pwm_max);
+            analogWrite(PIN_RED, 0);
             break;
         case Sequence::Both:
-            digitalWrite(PIN_GREEN, true);
-            digitalWrite(PIN_RED, true);
+            analogWrite(PIN_GREEN, pwm_max);
+            analogWrite(PIN_RED, pwm_max);
             break;
         case Sequence::None:
-            digitalWrite(PIN_GREEN, false);
-            digitalWrite(PIN_RED, false);
+            analogWrite(PIN_GREEN, 0);
+            analogWrite(PIN_RED, 0);
             break;
         }
     }
-    digitalWrite(PIN_LED, (sequence_index % 2) == 0);
 }
