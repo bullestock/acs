@@ -63,16 +63,18 @@ def screw_block(left):
 
 def assembly():
     bt = bottom()
-    cs = up(case_th)(forward(0)(coil_sups()))
+    cs = up(case_th)(right(3)(coil_sups()))
     fr = frame()
-    led_dist = 20
-    l1 = left(led_dist/2)(led_support())
-    lh1 = left(led_dist/2)(led_hole())
-    l2 = right(led_dist/2)(led_support())
-    lh2 = right(led_dist/2)(led_hole())
+    led_cc = 15
+    led_from_bot = 3.5
+    led_tr = case_w/2 - led_from_bot
+    l1 = forward(led_cc/2)(led_support())
+    lh1 = forward(led_cc/2)(led_hole())
+    l2 = back(led_cc/2)(led_support())
+    lh2 = back(led_cc/2)(led_hole())
     s1 = left(case_w/2+sw/2-0.1)(screw_block(True))
     s2 = right(case_w/2+sw/2-0.1)(screw_block(False))
-    return cs+fr+bt+l1+l2+s1+s2-lh1-lh2
+    return cs+fr+bt+left(led_tr)(l1+l2)+s1+s2-left(led_tr)(lh1+lh2)
 
 if __name__ == '__main__':
     a = assembly()
