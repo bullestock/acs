@@ -12,6 +12,9 @@ LED_ERROR = 'P5R10SGX10NX100RX100N'
 # Constant green
 LED_OPEN = 'P200R10SG'
 LED_CLOSING = 'P5R5SGX10NX100R'
+LED_LOW_INTEN = 'I20'
+LED_MED_INTEN = 'I50'
+LED_HIGH_INTEN = 'I100'
 
 # How many seconds green key must be held down to activate timed unlock
 UNLOCK_KEY_TIME = 0.1
@@ -103,6 +106,17 @@ end
 
 def is_it_thursday?
   return (Date.today.strftime("%A") == 'Thursday') && (Time.now.hour >= 16);
+end
+
+def get_led_inten_cmd
+  h = Time.now.hour
+  if h < 5 || h > 20
+    return LED_LOW_INTEN
+  end
+  if h < 8 || h > 16
+    return LED_MED_INTEN
+  end
+  return LED_HIGH_INTEN
 end
 
 class Ui
@@ -358,6 +372,7 @@ class Ui
     if ct != @last_time
       write(false, true, 12, ct, 'blue')
       @last_time = ct
+      #send(get_led_inten_cmd())
     end
   end
 end
