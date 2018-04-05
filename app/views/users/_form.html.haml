@@ -37,7 +37,7 @@
           - card_ids = []
           - if @user.card_id && !@user.card_id.empty?
             - card_ids.push @user.card_id
-          - card_ids.concat UnknownCard.all.collect { |u| [ u.card_id ] }
+          - card_ids.concat UnknownCard.all.collect { |u| [ "#{u.card_id} (#{u.stamp.in_time_zone(Rails.configuration.display_time_zone).strftime('%H:%M:%S')})" ] }
           = f.select :card_id, card_ids, { include_blank: 'None' }
       %tr
         %td= '&nbsp;'.html_safe

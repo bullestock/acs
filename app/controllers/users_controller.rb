@@ -40,8 +40,13 @@ class UsersController < ApplicationController
     @user = User.find(params[:id])
 
     if @user.update(user_params)
+      card_id = @user.card_id
+      sp_pos = card_id.index(' ')
+      if sp_pos
+        card_id = card_id[0..sp_pos]
+      end
       # Remove card ID from unknown_cards
-      uc = UnknownCard.find_by_card_id(@user.card_id)
+      uc = UnknownCard.find_by_card_id(card_id)
       if uc
         uc.destroy
       end
