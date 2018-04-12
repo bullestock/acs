@@ -105,7 +105,7 @@ def find_ports()
 end
 
 def is_it_thursday?
-  return (Date.today.strftime("%A") == 'Thursday') && (Time.now.hour >= 16);
+  return (Date.today.strftime("%A") == 'Thursday') && (Time.now.hour >= 15);
 end
 
 def get_led_inten_cmd
