@@ -203,7 +203,7 @@ class Ui
   end
 
   def unlock(who)
-    if @lock_state == :timed_unlock
+    if @lock_state == :timed_unlock || @lock_state == :unlocked
       return
     end
     @who = who
