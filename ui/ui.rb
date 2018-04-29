@@ -2,6 +2,7 @@
 require 'optparse'
 require 'serialport'
 require 'rest-client'
+require 'pg'
 
 HOST = 'https://panopticon.hal9k.dk'
 
@@ -28,6 +29,7 @@ UNLOCK_WARN_S = 5*60
 
 $q = Queue.new
 $api_key = File.read('apikey.txt').strip()
+$db_pass = File.read('dbpass.txt').strip()
 
 log_thread = Thread.new do
   puts "Thread start"
@@ -424,41 +426,22 @@ class CardReader
   end
 
   def check_permission(id)
-    rest_start = Time.now
+    db_start = Time.now
     allowed = nil
     error = false
     who = ''
     begin
-      url = "#{HOST}/api/v1/permissions"
-      response = RestClient::Request.execute(method: :post,
-                                             url: url,
-                                             timeout: 60,
-                                             payload: { api_token: $api_key,
-                                                        card_id: id
-                                                      }.to_json(),
-                                             headers: {
-                                               'Content-Type': 'application/json',
-                                               'Accept': 'application/json'
-                                             },
-					     :verify_ssl => false)
-      puts("Got server reply in #{Time.now - rest_start} s")
-      if response.body
-        begin
-          j = JSON.parse(response.body)
-          allowed = j['allowed']
-          user_id = j["id"]
-          who = j["name"]
-          puts("User: #{user_id} #{who}")
-        rescue JSON::ParserError => e
-          puts("Bad JSON received: #{response.body}")
-          error = true
-        end
+      conn = PG.connect(host: 'localhost', dbname: 'acs_production', user: 'acs', password: $db_pass)
+      res = conn.exec("SELECT u.id, u.name FROM users u join machines_users mu on mu.user_id = u.id join machines m on m.id = mu.machine_id where u.card_id = '#{id}' and m.name='Door'")
+      puts("Got #{res.ntuples()} tuples from DB in #{Time.now - db_start} s")
+      if res && res.ntuples() > 0
+        allowed = true
+        user_id = res[0]["id"]
+        who = res[0]["name"]
+        puts("User: #{user_id} #{who}")
       end
-    rescue RestClient::ResourceNotFound => e
-      puts("Unknown card")
-      return false, false, '', nil
     rescue Exception => e  
-      puts "#{e.class} Failed to connect to server"
+      puts "#{e.class} Failed to connect to DB"
       error = true
     end
     return allowed, error, who, user_id
@@ -568,9 +551,6 @@ end
 reader = CardReader.new(ports['reader'])
 reader.set_ui(ui)
 ui.set_reader(reader)
-
-# Prime Rails server
-reader.check_permission('')
 
 puts("----\nReady")
 ui.clear();
