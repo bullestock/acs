@@ -427,7 +427,7 @@ class CardReader
 
   def check_permission(id)
     db_start = Time.now
-    allowed = nil
+    allowed = false
     error = false
     who = ''
     begin
