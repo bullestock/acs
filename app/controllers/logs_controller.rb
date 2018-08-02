@@ -16,12 +16,9 @@ class LogsController < ApplicationController
 
   def index
     # Apply the search control filter.
+    logs_scope = Log.all
     filter_params = params[:filter]
-    if filter_params
-      filter_params = { 'message' => { 'idx' => { 'o' => 'like', 'v' => filter_params } } }
-      params[:filter] = filter_params
-    end
-    logs_scope = Log.all_with_filter(params, Log.all)
+    logs_scope = logs_scope.like(filter_params) if filter_params
 
     @logs = smart_listing_create :logs, logs_scope, partial: "logs/list", page_sizes: [100],
                                   sort_attributes: [[:stamp, "stamp"], [:user_id, "user_id"]],

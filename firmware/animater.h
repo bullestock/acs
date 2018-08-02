@@ -24,7 +24,7 @@ public:
     void next()
     {
         int old = mode;
-        mode = random(8);
+        mode = random(7);
         if (mode == old)
             ++mode;
         count = 0;
