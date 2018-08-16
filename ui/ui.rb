@@ -264,7 +264,7 @@ class Ui
       if elapsed > ENTER_TIME_SECS
         @lock_state = :locked
       else
-        send_and_wait("L1")
+        send_and_wait("LT")
         col = 'blue'
         s1 = 'Enter'
         s2 = @who
