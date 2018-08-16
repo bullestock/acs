@@ -140,7 +140,7 @@ void loop()
         digitalWrite(RELAY_PIN, 1);
         break;
     case LOCK_CLOSED:
-        digitalWrite(RELAY_PIN, 1);
+        digitalWrite(RELAY_PIN, 0);
         break;
     }
 
