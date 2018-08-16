@@ -21,6 +21,8 @@ const int TFT_LED = 7;
 
 const int TFT_BRIGHTNESS = 200;
 
+const int LOCK_OPEN_TIME_MS = 5000;
+
 TFT_22_ILI9225 tft = TFT_22_ILI9225(TFT_RST, TFT_RS, TFT_CS, TFT_LED, TFT_BRIGHTNESS);
 
 const int lcd_top = 38;
@@ -114,6 +116,16 @@ void erase_large(int line)
                       COLOR_BLACK);
 }
 
+enum LockState
+{
+    LOCK_OPEN,
+    LOCK_CLOSED,
+    LOCK_TIMED
+};
+
+LockState lock_state = LOCK_CLOSED;
+unsigned long lock_open_tick = 0;
+
 void loop()
 {
     if (!digitalRead(RED_SW_PIN))
@@ -121,6 +133,24 @@ void loop()
     if (!digitalRead(GREEN_SW_PIN))
         green_key_pressed = true;
 
+    switch (lock_state)
+    {
+    case LOCK_OPEN:
+    case LOCK_TIMED:
+        digitalWrite(RELAY_PIN, 1);
+        break;
+    case LOCK_CLOSED:
+        digitalWrite(RELAY_PIN, 1);
+        break;
+    }
+
+    if (lock_state == LOCK_TIMED)
+    {
+        const auto elapsed = millis() - lock_open_tick;
+        if (elapsed > LOCK_OPEN_TIME_MS)
+            lock_open_tick = LOCK_CLOSED;
+    }
+    
     if (Serial.available())
     {
         // Command
@@ -140,8 +170,24 @@ void loop()
             case 'L':
                 // Control lock
                 // L<on>
-                digitalWrite(RELAY_PIN, buf[1] == '1');
-                Serial.println("OK L");
+                switch (buf[1])
+                {
+                case '0':
+                    lock_state = LOCK_CLOSED;
+                    Serial.println("OK L");
+                    break;
+                case '1':
+                    lock_state = LOCK_OPEN;
+                    Serial.println("OK L");
+                    break;
+                case 'T':
+                    lock_state = LOCK_TIMED;
+                    Serial.println("OK L");
+                    lock_open_tick = millis();
+                    break;
+                default:
+                    Serial.println("OK L");
+                }
                 break;
             case 'C':
                 // Clear screen
