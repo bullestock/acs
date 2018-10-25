@@ -14,7 +14,7 @@
    viewBox="0 0 4322.8346 2161.4173"
    id="svg8254"
    version="1.1"
-   inkscape:version="0.92.2 (unknown)"
+   inkscape:version="0.92.3 (unknown)"
    sodipodi:docname="seal.svg">
   <defs
      id="defs8256" />
@@ -25,8 +25,8 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="3.1690542"
-     inkscape:cx="169.81104"
+     inkscape:zoom="2.2508502"
+     inkscape:cx="223.33011"
      inkscape:cy="2224.4207"
      inkscape:document-units="mm"
      inkscape:current-layer="layer1"
@@ -54,19 +54,19 @@
      id="layer1"
      transform="translate(0,1109.0551)">
     <rect
-       style="fill:none;fill-opacity:1;stroke:#000200;stroke-width:0.79783249;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+       style="fill:none;fill-opacity:1;stroke:#000200;stroke-width:0.95086032;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
        id="rect812"
-       width="314.55652"
-       height="148.02107"
-       x="0.39891624"
-       y="-1107.0427" />
+       width="441.96252"
+       height="149.63969"
+       x="0.47543016"
+       y="-1108.7379" />
     <rect
-       style="fill:none;fill-opacity:1;stroke:#f90200;stroke-width:1.03139603;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+       style="fill:none;fill-opacity:1;stroke:#f90200;stroke-width:1.25842023;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
        id="rect814"
-       width="229.28357"
-       height="69.834747"
-       x="43.035393"
-       y="-1067.9496" />
+       width="342.44238"
+       height="69.607719"
+       x="50.2355"
+       y="-1067.8361" />
     <circle
        style="fill:none;fill-opacity:1;stroke:#f90200;stroke-width:0.88061565;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
        id="path816"
@@ -76,7 +76,7 @@
     <circle
        r="3.1029994"
        cy="-1033.0322"
-       cx="294.09448"
+       cx="421.65356"
        id="circle818"
        style="fill:none;fill-opacity:1;stroke:#f90200;stroke-width:0.88061565;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1" />
   </g>
