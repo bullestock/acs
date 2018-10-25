@@ -13,7 +13,7 @@ SEGMENTS = 16
 
 case_h = 42
 case_d = 18
-case_w = 65
+case_w = 100
 case_th = 1.5
 coil_sup_l = 3
 coil_sup_d = 3
