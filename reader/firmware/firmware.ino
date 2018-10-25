@@ -5,8 +5,9 @@
 
 const int PIN_RX = 2;
 const int PIN_TX = A5; // Not connected
-const int PIN_GREEN = 3; // Needs PWM support
-const int PIN_RED = 5; // Needs PWM support
+const int PIN_GREEN = 5; // Needs PWM support
+const int PIN_RED = 3; // Needs PWM support
+const int PIN_BUZZER = 6; // Needs PWM support
 
 SoftwareSerial swSerial(PIN_RX, PIN_TX);
 
@@ -17,6 +18,7 @@ void setup()
 
     pinMode(PIN_GREEN, OUTPUT);
     pinMode(PIN_RED, OUTPUT);
+    pinMode(PIN_BUZZER, OUTPUT);
 }
 
 RDM6300 decoder;
@@ -38,6 +40,7 @@ int delay_counter = 0;
 int sequence_repeats = 1; // to force idle sequence on startup
 int sequence_iteration = 0;
 int pwm_max = 255;
+int buzzer_on = 255;
 
 bool parse_int(const char* line, int& index, int& value)
 {
@@ -79,7 +82,7 @@ void decode_line(const char* line, bool send_reply = true)
     {
     case 'v':
         // Show version
-        Serial.println("ACS cardreader v 0.7");
+        Serial.println("ACS cardreader v 0.8");
         return;
 
     case 'c':
@@ -90,7 +93,7 @@ void decode_line(const char* line, bool send_reply = true)
         return;
 
     case 'i':
-        // Set intensity
+        // Set LED intensity
         {
             int inten = 0;
             ++i;
@@ -107,6 +110,28 @@ void decode_line(const char* line, bool send_reply = true)
                 return;
             }
             pwm_max = inten;
+            Serial.println("OK");
+        }
+        return;
+        
+    case 'b':
+        // Set buzzer intensity
+        {
+            int inten = 0;
+            ++i;
+            if (!parse_int(line, i, inten))
+            {
+                Serial.print("Value must follow B: ");
+                Serial.println(line);
+                return;
+            }
+            if ((inten < 1) || (inten > 255))
+            {
+                Serial.print("Intensity must be between 1 and 255: ");
+                Serial.println(line);
+                return;
+            }
+            buzzer_on = inten;
             Serial.println("OK");
         }
         return;
@@ -250,7 +275,7 @@ bool card_flash_state = false;
 void loop()
 {
     delay(1);
-
+    
     const auto c = swSerial.read();
     if (c > 0)
         if (decoder.add_byte(c))
@@ -261,6 +286,7 @@ void loop()
                 card_flash_active = true;
                 const auto now = millis();
                 card_flash_start = now;
+                analogWrite(PIN_BUZZER, buzzer_on);
             }
         }
 
@@ -270,10 +296,12 @@ void loop()
         analogWrite(PIN_GREEN, card_flash_state ? pwm_max : 0);
         card_flash_state = !card_flash_state;
         delay(100);
+        analogWrite(PIN_BUZZER, card_flash_state ? buzzer_on : 0);
         const auto now = millis();
         if (now - card_flash_start > 500)
         {
             card_flash_active = false;
+            analogWrite(PIN_BUZZER, 0);
         }
         return;
     }
