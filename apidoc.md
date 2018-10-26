@@ -18,8 +18,6 @@ Returns
 }
 ```
 
-api/v1/permissions POST
-
 # Log API
 
 ## Add log entry
