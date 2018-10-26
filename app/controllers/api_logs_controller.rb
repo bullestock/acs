@@ -26,4 +26,20 @@ class ApiLogsController < BaseApiController
       end
     end
   end
+
+  def show
+    if !@machine
+      logger.info "Machine not found"
+      render nothing: true, status: :forbidden
+    else
+      @log = Log.where("logger_id = #{@machine.id}").order("id desc")
+      if @json['user_id']
+        @log = @log.where("user_id = #{@json['user_id']}")
+      end
+      if @json['last']
+        @log = @log.limit(@json['last'])
+      end
+      render json: @log
+    end
+  end
 end
