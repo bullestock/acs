@@ -33,11 +33,11 @@ class ApiLogsController < BaseApiController
       render nothing: true, status: :forbidden
     else
       @log = Log.where("logger_id = #{@machine.id}").order("id desc")
-      if @json['user_id']
-        @log = @log.where("user_id = #{@json['user_id']}")
+      if params['user_id']
+        @log = @log.where("user_id = #{params['user_id']}")
       end
-      if @json['last']
-        @log = @log.limit(@json['last'])
+      if params['last']
+        @log = @log.limit(params['last'])
       end
       render json: @log
     end
